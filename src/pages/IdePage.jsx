@@ -49,7 +49,7 @@ import { UserButton } from '@clerk/clerk-react';
 import { Button } from '@/components/ui/button.jsx';
 import { cn } from '@/lib/utils.js';
 import AiScreenCursor from '@/components/AiScreenCursor.jsx';
-import DrawnixDigitalBoard from '@/components/DrawnixDigitalBoard.jsx';
+import ExcalidrawWhiteboard from '@/components/ExcalidrawWhiteboard.jsx';
 import AppErrorBoundary from '@/components/AppErrorBoundary.jsx';
 
 export default function IdePage({
@@ -1001,11 +1001,12 @@ export default function IdePage({
       setTracks((prevTracks) =>
         prevTracks.map((track) => {
           if (track.id !== activeTrack.id) return track;
-          const updatedNodes = track.nodes.map((node, idx, arr) => {
+          const targetIndex = track.nodes.findIndex((n) => n.id === activeNode.id);
+          const updatedNodes = track.nodes.map((node, idx) => {
             if (node.id === activeNode.id) {
               return { ...node, status: 'completed' };
             }
-            if (idx > 0 && arr[idx - 1].id === activeNode.id && node.status === 'locked') {
+            if (idx === targetIndex + 1 && (node.status === 'locked' || !node.status)) {
               return { ...node, status: 'in-progress' };
             }
             return node;
@@ -1021,9 +1022,7 @@ export default function IdePage({
         id: `ai-eval-${Date.now()}`,
         sender: 'ai',
         type: result.passed ? 'success' : 'socratic-hint',
-        text: result.isAiGenerated
-          ? result.reply
-          : `${result.reply}\n\nThe AI service is unavailable. This feedback came from the built-in checker.`,
+        text: result.reply,
       },
     ]);
 
@@ -1151,18 +1150,16 @@ ${
         <div
           ref={subtitleBoxRef}
           style={{ opacity: isHoveringSubtitle ? 0.15 : 1 }}
-          className="fixed bottom-7 left-1/2 -translate-x-1/2 z-[70] pointer-events-none max-w-[94vw] transition-opacity duration-200 ease-out select-none"
+          className="fixed bottom-16 sm:bottom-7 left-1/2 -translate-x-1/2 z-[70] pointer-events-none max-w-[94vw] transition-opacity duration-200 ease-out select-none px-2"
           aria-live="polite"
         >
           <div
             style={{
-              fontSize: '36px',
-              lineHeight: 1.25,
               letterSpacing: '0.012em',
               fontFamily: '"DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
               textShadow: '0 2px 10px rgba(0, 0, 0, 0.9), 0 1px 3px rgba(0, 0, 0, 0.8)',
             }}
-            className="bg-neutral-900/90 text-white px-6 py-2.5 rounded-xl whitespace-nowrap overflow-hidden text-ellipsis font-medium border border-white/10 shadow-2xl backdrop-blur-md"
+            className="bg-neutral-900/90 text-white px-3.5 sm:px-6 py-1.5 sm:py-2.5 rounded-xl text-center text-xs sm:text-2xl md:text-3xl max-h-16 sm:max-h-none overflow-hidden text-ellipsis font-medium border border-white/10 shadow-2xl backdrop-blur-md"
           >
             {activeSubtitleLine}
           </div>
@@ -1215,7 +1212,7 @@ ${
               data-ai-target="run-button"
               onClick={() => handleRunCode(false)}
               disabled={isRunningCode || interactionMode === 'LESSON_REFLECTION'}
-              className="h-8 gap-1.5 px-3 text-xs font-medium border-border hover:bg-secondary text-foreground shadow-xs"
+              className="hidden sm:inline-flex h-8 gap-1.5 px-3 text-xs font-medium border-border hover:bg-secondary text-foreground shadow-xs"
             >
               <TerminalIcon className="w-3.5 h-3.5 text-emerald-500" />
               {isRunningCode ? 'Running...' : 'Run Code'}
@@ -1227,7 +1224,7 @@ ${
             data-ai-target="verify-button"
             onClick={() => handleVerifyWithTutor(null)}
             disabled={isEvaluating || interactionMode === 'LESSON_REFLECTION'}
-            className="h-8 gap-1.5 px-3.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs"
+            className="hidden sm:inline-flex h-8 gap-1.5 px-3.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
             {isEvaluating ? 'Checking...' : 'Check Solution'}
@@ -1240,7 +1237,7 @@ ${
               disabled={interactionMode !== 'COMPLETED'}
               title={`Up Next: ${nextModule.title.replace(/^\d+\.\s*/, '')}`}
               className={cn(
-                "h-8 gap-1.5 px-3 text-xs font-semibold shadow-xs",
+                "hidden sm:inline-flex h-8 gap-1.5 px-3 text-xs font-semibold shadow-xs",
                 interactionMode === 'COMPLETED'
                   ? "bg-primary text-primary-foreground hover:bg-primary/90"
                   : "opacity-40"
@@ -1314,7 +1311,7 @@ ${
       </header>
 
       {/* MAIN WORKSPACE BODY */}
-      <div className="flex-1 flex min-h-0 relative">
+      <div className="flex-1 flex flex-col md:flex-row min-h-0 relative">
         {draggingSplitter && <div className="fixed inset-0 z-50 cursor-ew-resize" />}
 
         {/* 1. COLLAPSIBLE FILE EXPLORER */}
@@ -1410,6 +1407,24 @@ ${
                 </div>
               )}
 
+              {!isMathLesson && (
+                <div
+                  data-ai-target="editor-tab-preview"
+                  onClick={() => {
+                    setActiveMainWorkspaceTab('preview');
+                  }}
+                  className={cn(
+                    "group px-3 h-full flex items-center gap-1.5 text-xs border-t-2 cursor-pointer transition",
+                    activeMainWorkspaceTab === 'preview'
+                      ? "bg-background dark:bg-[#18181b] text-foreground border-emerald-500 font-medium shadow-xs"
+                      : "text-muted-foreground border-transparent hover:text-foreground hover:bg-secondary/80"
+                  )}
+                >
+                  <Eye className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span>Preview</span>
+                </div>
+              )}
+
               {openTabs.map((filename) => (
                 <div
                   key={filename}
@@ -1495,6 +1510,22 @@ ${
                     isVerifying={isEvaluating}
                   />
                 </AppErrorBoundary>
+              </div>
+            ) : activeMainWorkspaceTab === 'preview' ? (
+              <div className="flex-1 min-w-0 h-full relative bg-background flex flex-col">
+                <div className="h-8 px-3 border-b border-border bg-secondary/40 flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+                  <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                    <Eye className="w-3.5 h-3.5 text-emerald-500" />
+                    Live Preview
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">Updates with your code</span>
+                </div>
+                <iframe
+                  title="Preview"
+                  srcDoc={livePreviewSrcDoc}
+                  className="flex-1 w-full bg-background"
+                  sandbox="allow-scripts"
+                />
               </div>
             ) : (
               <>
@@ -1668,17 +1699,17 @@ ${
           )}
         </main>
 
-        {/* 3. RIGHT PANEL: AI TUTOR */}
+        {/* 3. AI TUTOR (Bottom on mobile/small screens, right sidebar on desktop) */}
         {showTutorPane && (
           <>
             <div
               onMouseDown={() => setDraggingSplitter('tutor')}
-              className="w-1 bg-border hover:bg-neutral-500 cursor-ew-resize transition-colors shrink-0 z-20"
+              className="hidden md:block w-1 bg-border hover:bg-neutral-500 cursor-ew-resize transition-colors shrink-0 z-20"
             />
             <aside
               data-ai-target="tutor-pane"
-              style={{ width: `${tutorWidth}px` }}
-              className="bg-card dark:bg-[#1b1b1b] flex flex-col shrink-0 min-w-[260px] max-w-[560px] border-l border-border"
+              className="bg-card dark:bg-[#1b1b1b] flex flex-col shrink-0 border-t md:border-t-0 md:border-l border-border h-[42vh] md:h-full w-full md:w-[var(--tutor-w,350px)] md:min-w-[260px] md:max-w-[560px]"
+              style={{ '--tutor-w': `${tutorWidth}px` }}
             >
               <div className="h-10 px-3.5 border-b border-border flex items-center justify-between shrink-0 bg-secondary/30">
                 <div className="flex items-center gap-2">
@@ -1910,6 +1941,49 @@ ${
               </form>
             </aside>
           </>
+        )}
+      </div>
+
+      {/* MOBILE BOTTOM ACTION BAR FOR CHECK SOLUTION & NEXT MODULE */}
+      <div className="sm:hidden bg-background dark:bg-[#1b1b1b] border-t border-border px-3 py-2 flex items-center justify-between gap-2 shrink-0 z-30">
+        {!isMathLesson && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleRunCode(false)}
+            disabled={isRunningCode || interactionMode === 'LESSON_REFLECTION'}
+            className="flex-1 h-8 gap-1 px-2 text-xs font-medium border-border"
+          >
+            <TerminalIcon className="w-3.5 h-3.5 text-emerald-500" />
+            <span>{isRunningCode ? 'Running...' : 'Run'}</span>
+          </Button>
+        )}
+
+        <Button
+          size="sm"
+          onClick={() => handleVerifyWithTutor(null)}
+          disabled={isEvaluating || interactionMode === 'LESSON_REFLECTION'}
+          className="flex-1 h-8 gap-1 px-2.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs"
+        >
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span>{isEvaluating ? 'Checking...' : 'Check Solution'}</span>
+        </Button>
+
+        {nextModule && (
+          <Button
+            size="sm"
+            onClick={() => selectRoadmapNode(nextModule)}
+            disabled={interactionMode !== 'COMPLETED'}
+            className={cn(
+              "flex-1 h-8 gap-1 px-2 text-xs font-semibold shadow-xs",
+              interactionMode === 'COMPLETED'
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                : "opacity-40"
+            )}
+          >
+            <span>Next</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Button>
         )}
       </div>
     </div>

@@ -43,7 +43,7 @@ function mergeCurriculumTracks(savedTracks = []) {
     const existingNodes = validSavedNodes.map((savedNode) => {
       const curriculumNode = curriculumNodesById.get(savedNode.id);
       return curriculumNode
-        ? { ...savedNode, ...curriculumNode, status: savedNode.status || curriculumNode.status }
+        ? { ...curriculumNode, ...savedNode, status: savedNode.status || curriculumNode.status }
         : savedNode;
     });
     const addedCurriculumNodes = curriculumTrack.nodes.filter(

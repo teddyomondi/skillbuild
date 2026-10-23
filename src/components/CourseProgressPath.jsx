@@ -59,7 +59,8 @@ export default function CourseProgressPath({ nodes, onSelectModule }) {
 
       {nodes.map((node, index) => {
         const point = points[index];
-        const locked = node.status === "locked" || (index > 0 && nodes[index - 1].status !== "completed");
+        const isPrevCompleted = index === 0 || nodes[index - 1].status === "completed";
+        const locked = node.status === "locked" ? !isPrevCompleted : (!isPrevCompleted && node.status !== "in-progress" && node.status !== "completed");
         const completed = node.status === "completed";
         const current = !locked && !completed;
         const TopicIcon = node.isMathBoard

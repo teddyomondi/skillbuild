@@ -29,6 +29,16 @@ function ensureEnvLoaded() {
 }
 
 export async function readJsonBody(request, maxBytes = 512 * 1024) {
+  if (request.body && typeof request.body === 'object') {
+    return request.body;
+  }
+  if (typeof request.body === 'string') {
+    try {
+      return JSON.parse(request.body);
+    } catch {
+      return {};
+    }
+  }
   let body = '';
   for await (const chunk of request) {
     body += chunk;

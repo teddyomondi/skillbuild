@@ -40,6 +40,9 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
+    define: {
+      'process.env.IS_PREACT': JSON.stringify('true'),
+    },
     server: {
       port: 5173,
       headers: {
