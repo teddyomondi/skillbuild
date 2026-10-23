@@ -124,9 +124,9 @@ export function parseAppRoute(pathname = '/') {
   }
 
   // 4. /learn/:trackId/:nodeId
-  if (parts[0] === 'learn' && parts[1] && parts[2]) {
-    const trackId = parts[1];
-    const nodeId = parts[2];
+  if (parts[0] === 'learn') {
+    const trackId = parts[1] || 'frontend';
+    const nodeId = parts[2] || null;
     return {
       view: 'ide',
       trackId,
