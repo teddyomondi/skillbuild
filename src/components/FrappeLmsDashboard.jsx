@@ -30,7 +30,10 @@ function makeCurriculumDocuments(tracks) {
 
   const safeTracks = (Array.isArray(tracks) ? tracks : []).filter(
     (track) => track && typeof track.id === "string" && Array.isArray(track.nodes)
-  );
+  ).map((track) => ({
+    ...track,
+    nodes: track.nodes.filter((node) => node && typeof node.id === "string"),
+  }));
 
   return safeTracks.flatMap((track) => {
     const completedCount = track.nodes.filter((node) => node.status === "completed").length;
