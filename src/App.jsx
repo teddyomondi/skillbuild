@@ -1482,19 +1482,21 @@ ${
     );
   }
 
-  if (!isClerkLoaded) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background dark:bg-[#1F1F1F]">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
-  if (currentView === 'subjects' && isSignedIn) {
+  // Keep the subject picker available while Clerk initializes. The picker is
+  // the entry screen, so auth startup should not hide the entire application.
+  if (currentView === 'subjects') {
     return (
       <>
         <SubjectSelection
+          disabled={!isClerkLoaded}
           onSelect={(trackId) => {
+            if (!isClerkLoaded) return;
+            if (!isSignedIn) {
+              setAuthMode('sign-in');
+              navigateToRoute('/sign-in', { title: 'Sign in' });
+              setCurrentView('auth');
+              return;
+            }
             const selectedTrack = tracks.find((track) => track.id === trackId);
             if (!selectedTrack) return;
             setActiveTrackId(trackId);
@@ -1505,7 +1507,7 @@ ${
             setCurrentView('lms');
           }}
         />
-        {showOnboardingModal && (
+        {showOnboardingModal && isSignedIn && (
           <KenyanIndustryOnboarding
             initialLearnerName={clerkUser?.fullName || clerkUser?.firstName || 'Learner'}
             onCancel={() => setShowOnboardingModal(false)}
@@ -1513,6 +1515,14 @@ ${
           />
         )}
       </>
+    );
+  }
+
+  if (!isClerkLoaded) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background dark:bg-[#1F1F1F]">
+        <Spinner size="lg" />
+      </div>
     );
   }
 
@@ -1847,7 +1857,7 @@ ${
                   )}
                 >
                   <Compass className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                  <span>Digital Board (Drawnix)</span>
+                  <span>Math Board</span>
                 </div>
               )}
 

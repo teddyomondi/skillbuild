@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 
 /**
- * Drawnix-Inspired Digital Math Board
+ * Digital math board
  * Infinite canvas with coordinate axes, vector arrows, function plotting,
  * freehand drawing, math formulas, and interactive AI tutor collaboration.
  */
@@ -74,7 +74,7 @@ export default function DrawnixDigitalBoard({
 
   // AI drawing state
   const [aiDrawingActive, setAiDrawingActive] = useState(false);
-  const [aiStatusMessage, setAiStatusMessage] = useState('Digital Board ready. Start drawing or ask AI to guide you.');
+  const [aiStatusMessage, setAiStatusMessage] = useState('Math board ready. Start drawing or ask the tutor for help.');
 
   // Coordinate grid unit size (pixels per coordinate unit at 1.0x scale)
   const GRID_SIZE = 40;
@@ -161,8 +161,8 @@ export default function DrawnixDigitalBoard({
 
     ctx.clearRect(0, 0, width, height);
 
-    // Deep blackboard background
-    ctx.fillStyle = '#0b0f19';
+    // Match the lesson editor's dark workspace surface.
+    ctx.fillStyle = '#18181b';
     ctx.fillRect(0, 0, width, height);
 
     const centerX = width / 2 + panX;
@@ -172,7 +172,7 @@ export default function DrawnixDigitalBoard({
     // 1. Draw Math Grid Lines
     if (showGrid) {
       ctx.lineWidth = 1;
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = '#27272a';
 
       // Vertical grid lines
       const startX = centerX % scaledGrid;
@@ -812,17 +812,17 @@ export default function DrawnixDigitalBoard({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full flex flex-col bg-[#0b0f19] select-none overflow-hidden"
+      className="relative w-full h-full flex flex-col bg-background text-foreground select-none overflow-hidden"
     >
-      {/* 1. TOP DRAWNIX-STYLE FLOATING MATH TOOLBAR */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 p-1.5 bg-[#161b26]/95 border border-[#2a3449] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md">
+      {/* Math tools */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 p-1.5 bg-background/95 border border-border rounded-md shadow-md">
         {/* Selection & Pan */}
         <button
           onClick={() => setActiveTool('select')}
-          className={`p-2 rounded-xl transition ${
+          className={`p-2 rounded-md transition ${
             activeTool === 'select'
-              ? 'bg-sky-500/20 text-sky-400 border border-sky-400/40'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-secondary text-foreground border border-border'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           }`}
           title="Select / Move Tool (V)"
         >
@@ -831,26 +831,26 @@ export default function DrawnixDigitalBoard({
 
         <button
           onClick={() => setActiveTool('pan')}
-          className={`p-2 rounded-xl transition ${
+          className={`p-2 rounded-md transition ${
             activeTool === 'pan'
-              ? 'bg-sky-500/20 text-sky-400 border border-sky-400/40'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-secondary text-foreground border border-border'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           }`}
           title="Hand / Pan Canvas (H)"
         >
           <Hand className="w-4 h-4" />
         </button>
 
-        <div className="w-[1px] h-5 bg-[#2a3449] mx-0.5" />
+        <div className="w-[1px] h-5 bg-border mx-0.5" />
 
         {/* Freehand Pen */}
         <button
           data-ai-target="math-tool-pen"
           onClick={() => setActiveTool('pen')}
-          className={`p-2 rounded-xl transition ${
+          className={`p-2 rounded-md transition ${
             activeTool === 'pen'
-              ? 'bg-sky-500/20 text-sky-400 border border-sky-400/40'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-secondary text-foreground border border-border'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           }`}
           title="Pencil / Freehand Math Handwriting (P)"
         >
@@ -861,10 +861,10 @@ export default function DrawnixDigitalBoard({
         <button
           data-ai-target="math-tool-vector"
           onClick={() => setActiveTool('vector')}
-          className={`p-2 rounded-xl transition flex items-center gap-1 ${
+          className={`p-2 rounded-md transition flex items-center gap-1 ${
             activeTool === 'vector'
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 shadow-xs'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-secondary text-foreground border border-border'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           }`}
           title="Vector Arrow Tool (Shift+V): Draws vector with coordinates and magnitude"
         >
@@ -875,10 +875,10 @@ export default function DrawnixDigitalBoard({
         {/* Straight Line */}
         <button
           onClick={() => setActiveTool('line')}
-          className={`p-2 rounded-xl transition ${
+          className={`p-2 rounded-md transition ${
             activeTool === 'line'
-              ? 'bg-sky-500/20 text-sky-400 border border-sky-400/40'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-secondary text-foreground border border-border'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           }`}
           title="Line Segment (L)"
         >
@@ -888,10 +888,10 @@ export default function DrawnixDigitalBoard({
         {/* Shapes: Rect, Circle, Triangle */}
         <button
           onClick={() => setActiveTool('rect')}
-          className={`p-2 rounded-xl transition ${
+          className={`p-2 rounded-md transition ${
             activeTool === 'rect'
-              ? 'bg-sky-500/20 text-sky-400 border border-sky-400/40'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-secondary text-foreground border border-border'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           }`}
           title="Rectangle / Coordinate Region (R)"
         >
@@ -900,10 +900,10 @@ export default function DrawnixDigitalBoard({
 
         <button
           onClick={() => setActiveTool('circle')}
-          className={`p-2 rounded-xl transition ${
+          className={`p-2 rounded-md transition ${
             activeTool === 'circle'
-              ? 'bg-sky-500/20 text-sky-400 border border-sky-400/40'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-secondary text-foreground border border-border'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           }`}
           title="Unit Circle / Radius (C)"
         >
@@ -912,10 +912,10 @@ export default function DrawnixDigitalBoard({
 
         <button
           onClick={() => setActiveTool('triangle')}
-          className={`p-2 rounded-xl transition ${
+          className={`p-2 rounded-md transition ${
             activeTool === 'triangle'
-              ? 'bg-sky-500/20 text-sky-400 border border-sky-400/40'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-secondary text-foreground border border-border'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           }`}
           title="Right Triangle / Trigonometry (T)"
         >
@@ -925,10 +925,10 @@ export default function DrawnixDigitalBoard({
         {/* Math Text Formula */}
         <button
           onClick={() => setActiveTool('text')}
-          className={`p-2 rounded-xl transition ${
+          className={`p-2 rounded-md transition ${
             activeTool === 'text'
-              ? 'bg-sky-500/20 text-sky-400 border border-sky-400/40'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              ? 'bg-secondary text-foreground border border-border'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           }`}
           title="Type Math Formula or Note (M)"
         >
@@ -938,10 +938,10 @@ export default function DrawnixDigitalBoard({
         {/* Laser Pen */}
         <button
           onClick={() => setActiveTool('laser')}
-          className={`p-2 rounded-xl transition ${
+          className={`p-2 rounded-md transition ${
             activeTool === 'laser'
               ? 'bg-rose-500/20 text-rose-400 border border-rose-400/40'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           }`}
           title="Laser Pointer (temporary fading trail)"
         >
@@ -951,17 +951,17 @@ export default function DrawnixDigitalBoard({
         {/* Eraser */}
         <button
           onClick={() => setActiveTool('eraser')}
-          className={`p-2 rounded-xl transition ${
+          className={`p-2 rounded-md transition ${
             activeTool === 'eraser'
               ? 'bg-rose-500/20 text-rose-400 border border-rose-400/40'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           }`}
           title="Eraser (E)"
         >
           <Eraser className="w-4 h-4" />
         </button>
 
-        <div className="w-[1px] h-5 bg-[#2a3449] mx-0.5" />
+        <div className="w-[1px] h-5 bg-border mx-0.5" />
 
         {/* Color Palette Picker */}
         <div className="flex items-center gap-1 px-1">
@@ -982,10 +982,10 @@ export default function DrawnixDigitalBoard({
         <button
           data-ai-target="math-tool-grid"
           onClick={() => setSnapToGrid((v) => !v)}
-          className={`p-2 rounded-xl transition ${
+          className={`p-2 rounded-md transition ${
             snapToGrid
               ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40'
-              : 'text-gray-500 hover:text-gray-300'
+              : 'text-muted-foreground hover:text-muted-foreground'
           }`}
           title={snapToGrid ? 'Grid Snap: ON (Exact math coordinates)' : 'Grid Snap: OFF'}
         >
@@ -998,7 +998,7 @@ export default function DrawnixDigitalBoard({
         <button
           onClick={handleAiDrawSetup}
           disabled={aiDrawingActive}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/15 border border-purple-400/30 text-purple-300 hover:bg-purple-500/25 text-xs font-semibold backdrop-blur-md transition shadow-md"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-purple-500/15 border border-purple-400/30 text-purple-300 hover:bg-purple-500/25 text-xs font-semibold transition shadow-md"
           title="Ask the AI Tutor to draw the mathematical setup on the board"
         >
           <Sparkles className="w-3.5 h-3.5 text-purple-300 animate-pulse" />
@@ -1010,7 +1010,7 @@ export default function DrawnixDigitalBoard({
             data-ai-target="math-check-btn"
             onClick={onVerify}
             disabled={isVerifying}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg transition"
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>{isVerifying ? 'Checking...' : 'Check Work'}</span>
@@ -1038,9 +1038,9 @@ export default function DrawnixDigitalBoard({
               left: textInputPos.clientX - (containerRef.current?.getBoundingClientRect().left || 0),
               top: textInputPos.clientY - (containerRef.current?.getBoundingClientRect().top || 0)
             }}
-            className="absolute z-40 bg-[#161b26] border border-[#3b4760] rounded-xl p-2 shadow-2xl flex flex-col gap-1.5 animate-fadeIn"
+            className="absolute z-40 bg-background border border-border rounded-md p-2 shadow-lg flex flex-col gap-1.5 animate-fadeIn"
           >
-            <div className="text-[10px] text-gray-400 font-mono">
+            <div className="text-[10px] text-muted-foreground font-mono">
               Coordinates: ({textInputPos.x}, {textInputPos.y})
             </div>
             <input
@@ -1049,7 +1049,7 @@ export default function DrawnixDigitalBoard({
               placeholder="e.g. u + v = (4, 6) or f(x) = x^2"
               value={textInputValue}
               onChange={(e) => setTextInputValue(e.target.value)}
-              className="bg-[#0b0f19] border border-[#2a3449] rounded-lg px-2.5 py-1 text-xs text-white placeholder-gray-500 focus:outline-hidden focus:border-sky-400 w-64"
+              className="bg-background border border-input rounded-md px-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-ring w-64"
             />
             {/* Quick Math Symbols */}
             <div className="flex items-center gap-1 text-[11px] text-sky-300">
@@ -1058,7 +1058,7 @@ export default function DrawnixDigitalBoard({
                   type="button"
                   key={sym}
                   onClick={() => setTextInputValue((v) => v + sym)}
-                  className="px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10"
+                  className="px-1.5 py-0.5 rounded bg-secondary hover:bg-accent"
                 >
                   {sym}
                 </button>
@@ -1068,13 +1068,13 @@ export default function DrawnixDigitalBoard({
               <button
                 type="button"
                 onClick={() => setTextInputPos(null)}
-                className="px-2 py-0.5 rounded text-[11px] text-gray-400 hover:text-white"
+                className="px-2 py-0.5 rounded text-[11px] text-muted-foreground hover:text-foreground"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-2.5 py-0.5 rounded bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-semibold"
+                className="px-2.5 py-0.5 rounded bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] font-semibold"
               >
                 Add Note
               </button>
@@ -1083,18 +1083,18 @@ export default function DrawnixDigitalBoard({
         )}
 
         {/* FLOATING AI STATUS & HINT PILL */}
-        <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#161b26]/90 border border-[#2a3449] backdrop-blur-md text-xs text-gray-300 shadow-lg max-w-[65%] truncate pointer-events-none">
+        <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-md bg-background/95 border border-border text-xs text-muted-foreground shadow-lg max-w-[65%] truncate pointer-events-none">
           <Info className="w-3.5 h-3.5 text-sky-400 shrink-0" />
           <span className="truncate">{aiStatusMessage}</span>
         </div>
       </div>
 
       {/* 4. BOTTOM FLOATING ACTION BAR (Undo, Redo, Zoom, Clear) */}
-      <div className="absolute bottom-4 right-4 z-30 flex items-center gap-1.5 p-1 bg-[#161b26]/90 border border-[#2a3449] rounded-xl shadow-lg backdrop-blur-md">
+      <div className="absolute bottom-4 right-4 z-30 flex items-center gap-1.5 p-1 bg-background/95 border border-border rounded-md shadow-lg">
         <button
           onClick={handleUndo}
           disabled={undoStack.length === 0}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 transition"
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-30 transition"
           title="Undo (Ctrl+Z)"
         >
           <Undo2 className="w-4 h-4" />
@@ -1103,29 +1103,29 @@ export default function DrawnixDigitalBoard({
         <button
           onClick={handleRedo}
           disabled={redoStack.length === 0}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 transition"
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary disabled:opacity-30 transition"
           title="Redo (Ctrl+Y)"
         >
           <Redo2 className="w-4 h-4" />
         </button>
 
-        <div className="w-[1px] h-4 bg-[#2a3449] mx-0.5" />
+        <div className="w-[1px] h-4 bg-border mx-0.5" />
 
         <button
           onClick={() => setViewport((v) => ({ ...v, scale: Math.max(0.3, v.scale * 0.85) }))}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition"
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition"
           title="Zoom Out"
         >
           <ZoomOut className="w-4 h-4" />
         </button>
 
-        <span className="text-[11px] font-mono text-gray-300 px-1 select-none">
+        <span className="text-[11px] font-mono text-muted-foreground px-1 select-none">
           {Math.round(viewport.scale * 100)}%
         </span>
 
         <button
           onClick={() => setViewport((v) => ({ ...v, scale: Math.min(4.0, v.scale * 1.15) }))}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition"
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition"
           title="Zoom In"
         >
           <ZoomIn className="w-4 h-4" />
@@ -1133,18 +1133,18 @@ export default function DrawnixDigitalBoard({
 
         <button
           onClick={handleResetView}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition"
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition"
           title="Reset View to Origin (0, 0)"
         >
           <Maximize2 className="w-4 h-4" />
         </button>
 
-        <div className="w-[1px] h-4 bg-[#2a3449] mx-0.5" />
+        <div className="w-[1px] h-4 bg-border mx-0.5" />
 
         <button
           onClick={() => setShowGrid((v) => !v)}
-          className={`p-1.5 rounded-lg transition ${
-            showGrid ? 'text-sky-400 bg-sky-500/10' : 'text-gray-500 hover:text-gray-300'
+          className={`p-1.5 rounded-md transition ${
+            showGrid ? 'text-sky-400 bg-sky-500/10' : 'text-muted-foreground hover:text-muted-foreground'
           }`}
           title="Toggle Grid"
         >
@@ -1153,7 +1153,7 @@ export default function DrawnixDigitalBoard({
 
         <button
           onClick={handleClear}
-          className="p-1.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition"
+          className="p-1.5 rounded-md text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition"
           title="Clear Board"
         >
           <Trash2 className="w-4 h-4" />
