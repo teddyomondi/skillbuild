@@ -1336,7 +1336,7 @@ export async function speakNarration(
     let isSpeakingStarted = false;
     let isFinished = false;
 
-    // Show Chunk 0 immediately so user sees what is being spoken
+    // Show Chunk 0 text only, but DO NOT advance until audio actually begins
     notifySpeakingState(true, chunks[0].subtitleText);
 
     const finishOnce = () => {
@@ -1383,18 +1383,28 @@ export async function speakNarration(
       scheduleChunkTimer(chunks[currentIdx].estimatedDurationMs);
     };
 
-    // 1. Audio Start: Start chunk timer countdown ONLY when audio hardware actually begins speaking
+    // 1. Audio Start: Start advancing subtitles ONLY when speech actually starts playing
     utterance.onstart = () => {
       isSpeakingStarted = true;
       if (activeStartupFallbackTimer) {
         clearTimeout(activeStartupFallbackTimer);
         activeStartupFallbackTimer = null;
       }
+      notifySpeakingState(true, chunks[0].subtitleText);
       scheduleChunkTimer(chunks[0].estimatedDurationMs);
     };
 
     // 2. Word Boundary Event: Frame-accurate synchronization when supported by browser voice
     utterance.onboundary = (event) => {
+      // First boundary event confirms audio has started even if onstart was delayed
+      if (!isSpeakingStarted) {
+        isSpeakingStarted = true;
+        if (activeStartupFallbackTimer) {
+          clearTimeout(activeStartupFallbackTimer);
+          activeStartupFallbackTimer = null;
+        }
+      }
+
       if (typeof event.charIndex === 'number') {
         const charIndex = event.charIndex;
         const foundIdx = chunks.findIndex(
@@ -1402,7 +1412,7 @@ export async function speakNarration(
             charIndex >= c.startChar &&
             (idx === chunks.length - 1 || charIndex < chunks[idx + 1].startChar)
         );
-        if (foundIdx > currentIdx && foundIdx < chunks.length) {
+        if (foundIdx >= 0 && foundIdx !== currentIdx && foundIdx < chunks.length) {
           advanceToChunk(foundIdx);
         }
       }
@@ -1411,13 +1421,13 @@ export async function speakNarration(
     utterance.onend = finishOnce;
     utterance.onerror = finishOnce;
 
-    // Safety fallback: if browser delays or omits onstart within 600ms, start countdown
+    // Safety fallback: only if the browser completely fails to fire onstart/onboundary after 3.5s
     activeStartupFallbackTimer = setTimeout(() => {
       if (!isSpeakingStarted && !isFinished) {
         isSpeakingStarted = true;
         scheduleChunkTimer(chunks[0].estimatedDurationMs);
       }
-    }, 600);
+    }, 3500);
 
     // Safety fallback: if utterance.onend never fires, ensure completion after total duration + 3s
     activeKeepAliveTimer = setTimeout(() => {
