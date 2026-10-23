@@ -152,13 +152,13 @@ export default function FrappeLmsDashboard({
   }, [documents, setActiveTrackId]);
 
   useEffect(() => {
-    if (isSignedIn && (initialRoute.isRootRedirect || initialRoute.subView === "marketing")) {
+    if (isSignedIn && initialRoute.isRootRedirect && window.location.pathname !== "/welcome") {
       navigateToRoute(buildCourseTrackRoute(initialTrackId), {
         replace: true,
         title: "Courses",
       });
     }
-  }, [initialRoute.isRootRedirect, initialRoute.subView, initialTrackId, isSignedIn]);
+  }, [initialRoute.isRootRedirect, initialTrackId, isSignedIn]);
 
   if (!isLoaded) {
     return (

@@ -125,16 +125,10 @@ export default function App() {
       setTracks(mergeCurriculumTracks(remoteState.tracks || []));
       setModuleWorkspaces(remoteState.moduleWorkspaces || {});
 
-      const targetTrackId = initialRoute.trackId || (initialRoute.isRootRedirect ? 'mathematics' : remoteState.activeTrackId || 'mathematics');
+      const targetTrackId = initialRoute.trackId || remoteState.activeTrackId || 'frontend';
       const targetNodeId = initialRoute.nodeId || (targetTrackId === remoteState.activeTrackId ? remoteState.activeNodeId : null);
       setActiveTrackId(targetTrackId);
       if (targetNodeId) setActiveNodeId(targetNodeId);
-
-      if (initialRoute.isRootRedirect) {
-        navigateToRoute(buildCourseTrackRoute(targetTrackId), {
-          replace: true
-        });
-      }
     });
 
     return () => {
@@ -156,18 +150,15 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [tracks, activeTrackId, activeNodeId, moduleWorkspaces]);
 
-  // Auth redirect handler
+  // Auth redirect handler: when user finishes signing in, guide them to /subjects
   const prevSignedInRef = useRef(isSignedIn);
   useEffect(() => {
     if (!isClerkLoaded && !clerkTimedOut) return;
     if (!prevSignedInRef.current && isSignedIn) {
       const currentPath = window.location.pathname;
       if (
-        currentPath === '/' ||
-        currentPath === '/welcome' ||
         currentPath.startsWith('/sign-in') ||
-        currentPath.startsWith('/sign-up') ||
-        currentPath === '/subjects'
+        currentPath.startsWith('/sign-up')
       ) {
         navigateToRoute('/subjects', {
           replace: true,
@@ -182,16 +173,6 @@ export default function App() {
   useEffect(() => {
     if (!isClerkLoaded && !clerkTimedOut) return;
     if (currentView === 'auth' && isSignedIn) {
-      navigateToRoute('/subjects', {
-        replace: true,
-        title: 'Choose a subject'
-      });
-      setCurrentView('subjects');
-      return;
-    }
-    if (!isSignedIn) return;
-
-    if (initialRoute.isRootRedirect && initialRoute.view !== 'subjects') {
       navigateToRoute('/subjects', {
         replace: true,
         title: 'Choose a subject'
