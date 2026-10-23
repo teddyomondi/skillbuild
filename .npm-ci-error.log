@@ -1,0 +1,6 @@
+npm error code ENOTEMPTY
+npm error syscall rmdir
+npm error path C:\Users\Teddy\scrimba-ai-ide\node_modules\jotai\babel
+npm error errno -4051
+npm error ENOTEMPTY: directory not empty, rmdir 'C:\Users\Teddy\scrimba-ai-ide\node_modules\jotai\babel'
+npm error A complete log of this run can be found in: C:\Users\Teddy\AppData\Local\npm-cache\_logs\2026-10-23T21_58_15_314Z-debug-0.log

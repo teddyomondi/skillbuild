@@ -101,10 +101,15 @@ export default function FrappeLmsDashboard({
   }, [onLaunchLesson, tracks]);
 
   const handleEnterWorkspace = useCallback(() => {
-    navigateToRoute(buildCourseTrackRoute(activeTrackId || tracks[0]?.id || "frontend"), {
-      title: "Courses",
-    });
-  }, [activeTrackId, tracks]);
+    if (onBackToSubjects) {
+      navigateToRoute("/subjects", { title: "Choose a subject" });
+      onBackToSubjects();
+    } else {
+      navigateToRoute(buildCourseTrackRoute(activeTrackId || tracks[0]?.id || "frontend"), {
+        title: "Courses",
+      });
+    }
+  }, [activeTrackId, tracks, onBackToSubjects]);
 
   const handleSelectDocument = useCallback((documentId) => {
     const selected = documents.find((document) => document.id === documentId);
@@ -121,6 +126,15 @@ export default function FrappeLmsDashboard({
   const handleLaunchModule = useCallback((node) => {
     handleLaunchNode(activeDocument?.trackId, node);
   }, [activeDocument, handleLaunchNode]);
+
+  useEffect(() => {
+    if (activeTrackId) {
+      const trackDocId = `track-${activeTrackId}`;
+      if (documents.some((document) => document.id === trackDocId)) {
+        setActiveDocumentId(trackDocId);
+      }
+    }
+  }, [activeTrackId, documents]);
 
   useEffect(() => {
     const handlePopState = () => {

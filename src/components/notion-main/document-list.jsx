@@ -14,6 +14,9 @@ const DocumentList = ({
 }) => {
   const [expanded, setExpanded] = useState({
     "track-frontend": true,
+    "track-backend": true,
+    "track-fullstack-ai": true,
+    "track-mathematics": true,
   });
 
   const onExpand = (documentId) => {

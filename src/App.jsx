@@ -147,7 +147,7 @@ export default function App() {
     mergeCurriculumTracks(initialSavedState?.tracks || ROADMAP_TRACKS)
   );
   const [activeTrackId, setActiveTrackId] = useState(
-    () => initialRoute.trackId || 'mathematics'
+    () => initialRoute.trackId || 'frontend'
   );
   const [activeNodeId, setActiveNodeId] = useState(
     () =>
@@ -1191,16 +1191,15 @@ export default function App() {
   useEffect(() => {
     if (!isClerkLoaded && !clerkTimedOut) return;
     if (!prevSignedInRef.current && isSignedIn) {
-      // User just logged in or signed up -> show subject selection
+      // User just logged in or signed up -> directly show subject selection
       const currentPath = window.location.pathname;
-      if (currentPath === '/' || currentPath === '/welcome' || currentPath.startsWith('/sign-in') || currentPath.startsWith('/sign-up')) {
-        const hasCompletedOnboarding =
-          typeof window !== 'undefined' &&
-          window.localStorage.getItem('codepulse_kenya_onboarding_completed') === 'true';
-
-        if (!hasCompletedOnboarding) {
-          setShowOnboardingModal(true);
-        }
+      if (
+        currentPath === '/' ||
+        currentPath === '/welcome' ||
+        currentPath.startsWith('/sign-in') ||
+        currentPath.startsWith('/sign-up') ||
+        currentPath === '/subjects'
+      ) {
         navigateToRoute('/subjects', {
           replace: true,
           title: 'Choose a subject'
@@ -1215,13 +1214,6 @@ export default function App() {
   useEffect(() => {
     if (!isClerkLoaded && !clerkTimedOut) return;
     if (currentView === 'auth' && isSignedIn) {
-      const hasCompletedOnboarding =
-        typeof window !== 'undefined' &&
-        window.localStorage.getItem('codepulse_kenya_onboarding_completed') === 'true';
-
-      if (!hasCompletedOnboarding) {
-        setShowOnboardingModal(true);
-      }
       navigateToRoute('/subjects', {
         replace: true,
         title: 'Choose a subject'
@@ -1232,10 +1224,11 @@ export default function App() {
     if (!isSignedIn) return;
 
     if (initialRoute.isRootRedirect && initialRoute.view !== 'subjects') {
-      navigateToRoute(buildCourseTrackRoute(activeTrack.id), {
+      navigateToRoute('/subjects', {
         replace: true,
-        title: activeTrack.title.split('(')[0].trim()
+        title: 'Choose a subject'
       });
+      setCurrentView('subjects');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClerkLoaded, clerkTimedOut, isSignedIn, currentView]);
@@ -1537,28 +1530,18 @@ ${
       return null;
     }
     return (
-      <>
-        <SubjectSelection
-          disabled={!isClerkLoaded && !clerkTimedOut}
-          onSelect={(trackId) => {
-            const selectedTrack = tracks.find((track) => track.id === trackId);
-            if (!selectedTrack) return;
-            setActiveTrackId(trackId);
-            setActiveNodeId(selectedTrack.nodes[0]?.id || null);
-            navigateToRoute(buildCourseTrackRoute(trackId), {
-              title: selectedTrack.title.split('(')[0].trim()
-            });
-            setCurrentView('lms');
-          }}
-        />
-        {showOnboardingModal && (
-          <KenyanIndustryOnboarding
-            initialLearnerName={clerkUser?.fullName || clerkUser?.firstName || 'Learner'}
-            onCancel={() => setShowOnboardingModal(false)}
-            onCompleteOnboarding={handleCompleteOnboarding}
-          />
-        )}
-      </>
+      <SubjectSelection
+        disabled={!isClerkLoaded && !clerkTimedOut}
+        onSelect={(trackId) => {
+          const selectedTrack = tracks.find((track) => track.id === trackId) || tracks[0];
+          setActiveTrackId(trackId);
+          setActiveNodeId(selectedTrack.nodes[0]?.id || null);
+          navigateToRoute(buildCourseTrackRoute(trackId), {
+            title: selectedTrack.title.split('(')[0].trim()
+          });
+          setCurrentView('lms');
+        }}
+      />
     );
   }
 
@@ -1575,28 +1558,19 @@ ${
   // ============================================================================
   if (currentView === 'lms' || !isSignedIn) {
     return (
-      <>
-        <FrappeLmsDashboard
-          tracks={activeTrackId === 'mathematics'
-            ? tracks.filter((track) => track.id === 'mathematics')
-            : tracks.filter((track) => track.id !== 'mathematics')}
-          activeTrackId={activeTrackId}
-          setActiveTrackId={setActiveTrackId}
-          onLaunchLesson={(trackId, node) => selectRoadmapNode(node, trackId)}
-          onBackToSubjects={() => {
-            navigateToRoute('/subjects', { title: 'Choose a subject' });
-            setCurrentView('subjects');
-          }}
-          forceMarketing={!isSignedIn}
-        />
-        {showOnboardingModal && (
-          <KenyanIndustryOnboarding
-            initialLearnerName={clerkUser?.fullName || clerkUser?.firstName || 'Learner'}
-            onCancel={() => setShowOnboardingModal(false)}
-            onCompleteOnboarding={handleCompleteOnboarding}
-          />
-        )}
-      </>
+      <FrappeLmsDashboard
+        tracks={activeTrackId === 'mathematics'
+          ? tracks.filter((track) => track.id === 'mathematics')
+          : tracks.filter((track) => track.id !== 'mathematics')}
+        activeTrackId={activeTrackId}
+        setActiveTrackId={setActiveTrackId}
+        onLaunchLesson={(trackId, node) => selectRoadmapNode(node, trackId)}
+        onBackToSubjects={() => {
+          navigateToRoute('/subjects', { title: 'Choose a subject' });
+          setCurrentView('subjects');
+        }}
+        forceMarketing={!isSignedIn}
+      />
     );
   }
 
