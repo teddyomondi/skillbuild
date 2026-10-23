@@ -9,6 +9,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { ROADMAP_TRACKS } from '../data/roadmapCurriculum.js';
 import { createDynamicDetourNode } from './socraticAiTutor.js';
+import { compileChallengeEvaluator } from './lessonDevelopmentEngine.js';
 
 const LOCAL_STATE_KEY = 'codepulse_learner_state_v1';
 const LEARNER_ID_KEY = 'codepulse_learner_id_v1';
@@ -104,7 +105,12 @@ export function serializeTracksForStorage(tracks = []) {
         ? {
             prompt: node.challengeSpec.prompt,
             targetFile: node.challengeSpec.targetFile,
-            conceptsTested: node.challengeSpec.conceptsTested || []
+            conceptsTested: node.challengeSpec.conceptsTested || [],
+            requiredPatterns: node.challengeSpec.requiredPatterns || [],
+            forbiddenPatterns: node.challengeSpec.forbiddenPatterns || [],
+            expectedOutputPatterns: node.challengeSpec.expectedOutputPatterns || [],
+            socraticPraise: node.challengeSpec.socraticPraise || '',
+            socraticHint: node.challengeSpec.socraticHint || ''
           }
         : undefined
     }))
@@ -132,7 +138,7 @@ export function rehydrateTracksWithEvaluators(savedTracks = null) {
     }
   }
 
-  return validTracks.map((savedTrack) => {
+  const rehydratedSaved = validTracks.map((savedTrack) => {
     const baseTrack = ROADMAP_TRACKS.find((t) => t.id === savedTrack.id) || savedTrack;
     const rehydratedNodes = savedTrack.nodes.filter(
       (node) => node && typeof node.id === 'string'
@@ -148,6 +154,17 @@ export function rehydrateTracksWithEvaluators(savedTracks = null) {
             ...builtIn.challengeSpec,
             ...(savedNode.challengeSpec || {}),
             evaluateSubmission: builtIn.challengeSpec?.evaluateSubmission
+          }
+        };
+      }
+
+      // Check if custom node has declarative patterns for compileChallengeEvaluator
+      if (savedNode.challengeSpec?.requiredPatterns?.length || savedNode.isCustomGenerated) {
+        return {
+          ...savedNode,
+          challengeSpec: {
+            ...savedNode.challengeSpec,
+            evaluateSubmission: compileChallengeEvaluator(savedNode.challengeSpec)
           }
         };
       }
@@ -175,12 +192,22 @@ export function rehydrateTracksWithEvaluators(savedTracks = null) {
       };
     });
 
+    // Also include any official nodes from baseTrack that aren't in savedTrack
+    const savedNodeIds = new Set(savedTrack.nodes.map((n) => n.id));
+    const missingOfficialNodes = (baseTrack.nodes || []).filter((n) => !savedNodeIds.has(n.id));
+
     return {
       ...baseTrack,
       ...savedTrack,
-      nodes: rehydratedNodes
+      nodes: [...rehydratedNodes, ...missingOfficialNodes]
     };
   });
+
+  // Ensure any built-in track from ROADMAP_TRACKS that was not in savedTracks is added!
+  const savedTrackIds = new Set(validTracks.map((t) => t.id));
+  const missingOfficialTracks = ROADMAP_TRACKS.filter((t) => !savedTrackIds.has(t.id));
+
+  return [...rehydratedSaved, ...missingOfficialTracks];
 }
 
 /**

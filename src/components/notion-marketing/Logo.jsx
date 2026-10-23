@@ -31,7 +31,7 @@ const Logo = ({ forceDarkText, onClick } = {}) => {
           forceDarkText ? "text-neutral-900" : "text-foreground"
         )}
       >
-        CodePulse
+        Upskill
       </p>
     </div>
   );

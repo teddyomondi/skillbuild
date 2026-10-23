@@ -93,7 +93,7 @@ const stepsData = [
     badge: "Adaptive Detour Engine",
     title: "Personalized Next Modules Built on the Fly",
     description:
-      "Whenever you struggle with a concept like closures, return values, or semantic tags, CodePulse injects a tailored practice module as your very next step.",
+      "Whenever you struggle with a concept like closures, return values, or semantic tags, Upskill injects a tailored practice module as your very next step.",
     points: [
       "Dynamically injects custom modules into your learning path",
       "Adds practice lessons to your learning path when extra practice helps",
@@ -204,7 +204,7 @@ export const HowItWorks = ({ scrollContainerRef, onEnterWorkspace }) => {
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-neutral-900 border border-neutral-700 text-neutral-300">
               <Sparkles className="h-3 w-3 text-amber-400" />
-              <span>How CodePulse Works</span>
+              <span>How Upskill Works</span>
             </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-normal tracking-tight text-white font-serif">
               From concept to mastery in 4 interactive steps

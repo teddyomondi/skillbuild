@@ -22,7 +22,6 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  Sparkles,
   CheckCircle2,
   Info
 } from 'lucide-react';
@@ -38,8 +37,7 @@ export default function DrawnixDigitalBoard({
   activeNode = null,
   onBoardChange = null,
   onVerify = null,
-  isVerifying = false,
-  aiTimeline = []
+  isVerifying = false
 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -72,8 +70,6 @@ export default function DrawnixDigitalBoard({
   const [textInputPos, setTextInputPos] = useState(null);
   const [textInputValue, setTextInputValue] = useState('');
 
-  // AI drawing state
-  const [aiDrawingActive, setAiDrawingActive] = useState(false);
   const [aiStatusMessage, setAiStatusMessage] = useState('Math board ready. Start drawing or ask the tutor for help.');
 
   // Coordinate grid unit size (pixels per coordinate unit at 1.0x scale)
@@ -155,47 +151,51 @@ export default function DrawnixDigitalBoard({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const width = canvas.width;
-    const height = canvas.height;
-    const { x: panX, y: panY, scale } = viewport;
+    try {
+      const width = canvas.width || 800;
+      const height = canvas.height || 600;
+      if (width <= 0 || height <= 0) return;
 
-    ctx.clearRect(0, 0, width, height);
+      const { x: panX = 0, y: panY = 0, scale = 1 } = viewport || {};
+      const safeScale = Math.max(0.2, Math.min(5.0, Number(scale) || 1));
 
-    // Match the lesson editor's dark workspace surface.
-    ctx.fillStyle = '#18181b';
-    ctx.fillRect(0, 0, width, height);
+      ctx.clearRect(0, 0, width, height);
 
-    const centerX = width / 2 + panX;
-    const centerY = height / 2 + panY;
-    const scaledGrid = GRID_SIZE * scale;
+      // Match the lesson editor's dark workspace surface.
+      ctx.fillStyle = '#18181b';
+      ctx.fillRect(0, 0, width, height);
 
-    // 1. Draw Math Grid Lines
-    if (showGrid) {
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = '#27272a';
+      const centerX = width / 2 + (Number(panX) || 0);
+      const centerY = height / 2 + (Number(panY) || 0);
+      const scaledGrid = Math.max(12, (GRID_SIZE || 40) * safeScale);
 
-      // Vertical grid lines
-      const startX = centerX % scaledGrid;
-      for (let x = startX; x < width; x += scaledGrid) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
+      // 1. Draw Math Grid Lines
+      if (showGrid) {
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#27272a';
+
+        // Vertical grid lines
+        const startX = ((centerX % scaledGrid) + scaledGrid) % scaledGrid;
+        for (let x = startX; x < width; x += scaledGrid) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, height);
+          ctx.stroke();
+        }
+
+        // Horizontal grid lines
+        const startY = ((centerY % scaledGrid) + scaledGrid) % scaledGrid;
+        for (let y = startY; y < height; y += scaledGrid) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y);
+          ctx.stroke();
+        }
       }
 
-      // Horizontal grid lines
-      const startY = centerY % scaledGrid;
-      for (let y = startY; y < height; y += scaledGrid) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-      }
-    }
-
-    // 2. Draw Major Cartesian Axes (X & Y)
-    ctx.lineWidth = Math.max(1.5, 2 * scale);
-    ctx.strokeStyle = '#38bdf8'; // Cyan accent for axes
+      // 2. Draw Major Cartesian Axes (X & Y)
+      ctx.lineWidth = Math.max(1.5, 2 * safeScale);
+      ctx.strokeStyle = '#38bdf8'; // Cyan accent for axes
 
     // X-Axis
     ctx.beginPath();
@@ -412,28 +412,36 @@ export default function DrawnixDigitalBoard({
 
       // FUNCTION CURVE PLOT
       else if (el.type === 'plot') {
-        const fn = el.fn || ((x) => x * x * 0.5); // default f(x) = 0.5*x^2
+        const fn = typeof el.fn === 'function' ? el.fn : ((x) => x * x * 0.5);
         ctx.beginPath();
         const minX = -12;
         const maxX = 12;
         let started = false;
         for (let mx = minX; mx <= maxX; mx += 0.1) {
-          const my = fn(mx);
-          const sp = boardToScreen(mx, my);
-          if (!started) {
-            ctx.moveTo(sp.screenX, sp.screenY);
-            started = true;
-          } else {
-            ctx.lineTo(sp.screenX, sp.screenY);
+          try {
+            const my = fn(mx);
+            const sp = boardToScreen(mx, my);
+            if (!started) {
+              ctx.moveTo(sp.screenX, sp.screenY);
+              started = true;
+            } else {
+              ctx.lineTo(sp.screenX, sp.screenY);
+            }
+          } catch {
+            // ignore plot point error
           }
         }
         ctx.stroke();
 
         if (el.label) {
-          const labelPt = boardToScreen(el.labelX || 3, fn(el.labelX || 3));
-          ctx.fillStyle = el.color || '#34d399';
-          ctx.font = `bold ${Math.max(12, 14 * scale)}px sans-serif`;
-          ctx.fillText(el.label, labelPt.screenX + 10, labelPt.screenY);
+          try {
+            const labelPt = boardToScreen(el.labelX || 3, fn(el.labelX || 3));
+            ctx.fillStyle = el.color || '#34d399';
+            ctx.font = `bold ${Math.max(12, 14 * scale)}px sans-serif`;
+            ctx.fillText(el.label, labelPt.screenX + 10, labelPt.screenY);
+          } catch {
+            // ignore label error
+          }
         }
       }
 
@@ -487,6 +495,9 @@ export default function DrawnixDigitalBoard({
       }
       ctx.stroke();
       ctx.restore();
+    }
+    } catch (err) {
+      console.warn('Digital board canvas draw error:', err);
     }
   }, [viewport, elements, showGrid, laserTrail, boardToScreen, GRID_SIZE]);
 
@@ -695,19 +706,24 @@ export default function DrawnixDigitalBoard({
 
   // Mouse Wheel Zoom
   const handleWheel = (e) => {
-    e.preventDefault();
+    try {
+      e.preventDefault();
+    } catch {
+      // ignore passive event error
+    }
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
     const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
     setViewport((prev) => {
-      const newScale = Math.min(4.0, Math.max(0.3, prev.scale * zoomFactor));
-      const mouseX = e.clientX - rect.left - (rect.width / 2 + prev.x);
-      const mouseY = e.clientY - rect.top - (rect.height / 2 + prev.y);
+      const prevScale = prev?.scale || 1;
+      const newScale = Math.min(4.0, Math.max(0.3, prevScale * zoomFactor));
+      const mouseX = e.clientX - rect.left - (rect.width / 2 + (prev?.x || 0));
+      const mouseY = e.clientY - rect.top - (rect.height / 2 + (prev?.y || 0));
 
       return {
-        x: prev.x - mouseX * (zoomFactor - 1),
-        y: prev.y - mouseY * (zoomFactor - 1),
+        x: (prev?.x || 0) - mouseX * (zoomFactor - 1),
+        y: (prev?.y || 0) - mouseY * (zoomFactor - 1),
         scale: newScale
       };
     });
@@ -762,52 +778,6 @@ export default function DrawnixDigitalBoard({
   const handleResetView = () => {
     setViewport({ x: 0, y: 0, scale: 1 });
   };
-
-  // AI Collaboration: AI draws steps on board
-  const handleAiDrawSetup = useCallback(() => {
-    setAiDrawingActive(true);
-    setAiStatusMessage('AI is sketching the initial mathematical setup on your board...');
-
-    const sampleVectors = [
-      {
-        id: `ai-vector-u`,
-        name: 'u',
-        type: 'vector',
-        x1: 0,
-        y1: 0,
-        x2: 3,
-        y2: 2,
-        color: '#38bdf8',
-        width: 3.5,
-        label: 'u = (3, 2)',
-        isReference: true
-      },
-      {
-        id: `ai-text-formula`,
-        type: 'text',
-        x: -8,
-        y: 6,
-        text: 'Resultant: u + v = (3 + 1, 2 + 4) = (4, 6)',
-        color: '#fbbf24',
-        fontSize: 15
-      }
-    ];
-
-    setTimeout(() => {
-      setElements((prev) => [...prev, ...sampleVectors]);
-      setAiDrawingActive(false);
-      setAiStatusMessage('Setup drawn! Now select the Vector Arrow tool and draw vector v = (1, 4) starting at (3, 2).');
-    }, 800);
-  }, []);
-
-  // Listen for external trigger from global header toolbar
-  useEffect(() => {
-    const handleGlobalAiDraw = () => {
-      handleAiDrawSetup();
-    };
-    window.addEventListener('drawnix:ai-draw', handleGlobalAiDraw);
-    return () => window.removeEventListener('drawnix:ai-draw', handleGlobalAiDraw);
-  }, [handleAiDrawSetup]);
 
   return (
     <div
@@ -993,18 +963,8 @@ export default function DrawnixDigitalBoard({
         </button>
       </div>
 
-      {/* 2. TOP RIGHT AI ASSIST & VERIFY ACTIONS */}
+      {/* Lesson check action */}
       <div className="absolute top-3 right-4 z-30 flex items-center gap-2">
-        <button
-          onClick={handleAiDrawSetup}
-          disabled={aiDrawingActive}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-purple-500/15 border border-purple-400/30 text-purple-300 hover:bg-purple-500/25 text-xs font-semibold transition shadow-md"
-          title="Ask the AI Tutor to draw the mathematical setup on the board"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-purple-300 animate-pulse" />
-          <span>{aiDrawingActive ? 'AI Drawing...' : 'AI Draw Setup'}</span>
-        </button>
-
         {onVerify && (
           <button
             data-ai-target="math-check-btn"

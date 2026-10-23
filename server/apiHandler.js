@@ -1,9 +1,34 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createAnthropic } from '@ai-sdk/anthropic';
 
-export async function readJsonBody(request, maxBytes = 64 * 1024) {
+function ensureEnvLoaded() {
+  if (process.env.LLM_API_KEY && process.env.LLM_PROVIDER) return;
+  try {
+    const envPath = path.resolve(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf8');
+      for (const line of content.split(/\r?\n/)) {
+        const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+        if (!match) continue;
+        let value = match[2].trim();
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+        if (!process.env[match[1]]) {
+          process.env[match[1]] = value;
+        }
+      }
+    }
+  } catch {
+    // Ignore if unreadable
+  }
+}
+
+export async function readJsonBody(request, maxBytes = 512 * 1024) {
   let body = '';
   for await (const chunk of request) {
     body += chunk;
@@ -28,6 +53,8 @@ export async function callServerLlm({
   expectJson = true,
   temperature = 0.45
 }) {
+  ensureEnvLoaded();
+
   const provider = (apiConfig.provider || process.env.LLM_PROVIDER || process.env.VITE_LLM_PROVIDER || 'gemini').trim().toLowerCase();
   const apiKey = (
     apiConfig.apiKey ||
@@ -47,7 +74,12 @@ export async function callServerLlm({
     custom: 'gpt-4o-mini'
   };
   const rawModel = (apiConfig.model || process.env.LLM_MODEL || process.env.VITE_LLM_MODEL || defaults[provider] || defaults.gemini).trim();
-  const modelId = (provider === 'gemini' && rawModel.startsWith('gpt-')) ? 'gemini-2.5-flash' : rawModel;
+  let modelId = rawModel;
+  if (provider === 'gemini') {
+    if (rawModel.startsWith('gpt-') || rawModel === 'gemini-1.5-flash' || rawModel === 'gemini-2.0-flash' || !rawModel) {
+      modelId = 'gemini-2.5-flash';
+    }
+  }
 
   let primaryError = null;
 
@@ -84,8 +116,12 @@ export async function callServerLlm({
         return { text, providerUsed: provider };
       }
     } catch (err) {
-      primaryError = err;
-      console.warn(`[AI Server] Primary provider (${provider}) failed:`, err.message);
+      let friendlyMessage = err.message;
+      if (/quota/i.test(err.message) || /limit: 20/i.test(err.message) || /free_tier_requests/i.test(err.message)) {
+        friendlyMessage = 'Google Gemini Free Tier daily quota reached (limit: 20 requests/day on this API key). Running on backup AI.';
+      }
+      primaryError = new Error(friendlyMessage);
+      console.warn(`[AI Server] Primary provider (${provider}) failed:`, friendlyMessage);
     }
   }
 
@@ -100,9 +136,8 @@ export async function callServerLlm({
       },
       body: JSON.stringify({
         model: 'openai',
-        ...(expectJson ? { response_format: { type: 'json_object' } } : {}),
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: expectJson ? `${systemPrompt}\nIMPORTANT: Reply with valid JSON ONLY.` : systemPrompt },
           { role: 'user', content: userPrompt }
         ],
         temperature: Math.min(1, Math.max(0, Number(temperature) || 0.45))
@@ -136,6 +171,8 @@ export async function callServerLlm({
 }
 
 export async function handleApi(request, response, pathname) {
+  ensureEnvLoaded();
+
   if (request.method !== 'POST') {
     sendJsonResponse(response, 405, { error: 'Use POST for this endpoint.' });
     return;

@@ -62,6 +62,7 @@ import AiScreenCursor from './components/AiScreenCursor.jsx';
 import KenyanIndustryOnboarding from './components/KenyanIndustryOnboarding.jsx';
 import DrawnixDigitalBoard from './components/DrawnixDigitalBoard.jsx';
 import SubjectSelection from './components/SubjectSelection.jsx';
+import AppErrorBoundary from './components/AppErrorBoundary.jsx';
 
 function mergeCurriculumTracks(savedTracks = []) {
   const validSavedTracks = (Array.isArray(savedTracks) ? savedTracks : [])
@@ -109,6 +110,14 @@ function mergeCurriculumTracks(savedTracks = []) {
 export default function App() {
   const { isLoaded: isClerkLoaded, isSignedIn } = useAuth();
   const { user: clerkUser } = useUser();
+
+  const [clerkTimedOut, setClerkTimedOut] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setClerkTimedOut(true);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (clerkUser?.id) {
@@ -1177,9 +1186,34 @@ export default function App() {
     [activeTrack.id, activeNode.id]
   );
 
-  // Sync URL on initial load (e.g. `/` -> `/courses/:trackId`) and handle Browser Back/Forward (`popstate`)
+  // Track previous sign-in status to detect login/signup completions
+  const prevSignedInRef = useRef(isSignedIn);
   useEffect(() => {
-    if (!isClerkLoaded) return;
+    if (!isClerkLoaded && !clerkTimedOut) return;
+    if (!prevSignedInRef.current && isSignedIn) {
+      // User just logged in or signed up -> show subject selection
+      const currentPath = window.location.pathname;
+      if (currentPath === '/' || currentPath === '/welcome' || currentPath.startsWith('/sign-in') || currentPath.startsWith('/sign-up')) {
+        const hasCompletedOnboarding =
+          typeof window !== 'undefined' &&
+          window.localStorage.getItem('codepulse_kenya_onboarding_completed') === 'true';
+
+        if (!hasCompletedOnboarding) {
+          setShowOnboardingModal(true);
+        }
+        navigateToRoute('/subjects', {
+          replace: true,
+          title: 'Choose a subject'
+        });
+        setCurrentView('subjects');
+      }
+    }
+    prevSignedInRef.current = isSignedIn;
+  }, [isClerkLoaded, clerkTimedOut, isSignedIn]);
+
+  // Sync URL on initial load and handle Browser Back/Forward (`popstate`)
+  useEffect(() => {
+    if (!isClerkLoaded && !clerkTimedOut) return;
     if (currentView === 'auth' && isSignedIn) {
       const hasCompletedOnboarding =
         typeof window !== 'undefined' &&
@@ -1197,14 +1231,14 @@ export default function App() {
     }
     if (!isSignedIn) return;
 
-    if (initialRoute.isRootRedirect) {
+    if (initialRoute.isRootRedirect && initialRoute.view !== 'subjects') {
       navigateToRoute(buildCourseTrackRoute(activeTrack.id), {
         replace: true,
         title: activeTrack.title.split('(')[0].trim()
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isClerkLoaded, isSignedIn, currentView]);
+  }, [isClerkLoaded, clerkTimedOut, isSignedIn, currentView]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -1221,6 +1255,11 @@ export default function App() {
         return;
       }
       if (route.view === 'subjects') {
+        if (!isSignedIn) {
+          setAuthMode('sign-in');
+          setCurrentView('auth');
+          return;
+        }
         setCurrentView('subjects');
         return;
       }
@@ -1236,12 +1275,12 @@ export default function App() {
 
       // IDE Route: /learn/:trackId/:nodeId
       const targetTrack =
-        tracks.find((t) => t.id === (route.trackId || activeTrackId)) || tracks[0];
+        tracks.find((t) => t.id === (route.trackId || activeTrackId)) || tracks[0] || ROADMAP_TRACKS[0];
       const targetNode =
-        targetTrack.nodes.find((n) => n.id === (route.nodeId || activeNodeId)) ||
-        targetTrack.nodes[0];
+        targetTrack?.nodes?.find((n) => n.id === (route.nodeId || activeNodeId)) ||
+        targetTrack?.nodes?.[0] || ROADMAP_TRACKS[0].nodes[0];
 
-      if (targetNode.id !== activeNode.id || targetTrack.id !== activeTrack.id || currentView !== 'ide') {
+      if (targetNode && targetTrack && (targetNode.id !== activeNode?.id || targetTrack.id !== activeTrack?.id || currentView !== 'ide')) {
         selectRoadmapNode(targetNode, targetTrack.id, false, true);
       }
 
@@ -1464,7 +1503,7 @@ ${
   // VIEW 0: CLERK AUTHENTICATION PAGES (`/sign-in` & `/sign-up` from notion-lite)
   // ============================================================================
   if (currentView === 'auth') {
-    if (!isClerkLoaded) {
+    if (!isClerkLoaded && !clerkTimedOut) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-background dark:bg-[#1F1F1F]">
           <Spinner size="lg" />
@@ -1482,21 +1521,26 @@ ${
     );
   }
 
-  // Keep the subject picker available while Clerk initializes. The picker is
-  // the entry screen, so auth startup should not hide the entire application.
+  // Subject selection page is shown after login or signup
   if (currentView === 'subjects') {
+    if (!isClerkLoaded && !clerkTimedOut) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-background dark:bg-[#1F1F1F]">
+          <Spinner size="lg" />
+        </div>
+      );
+    }
+    if (!isSignedIn) {
+      setAuthMode('sign-in');
+      navigateToRoute('/sign-in', { title: 'Sign in' });
+      setCurrentView('auth');
+      return null;
+    }
     return (
       <>
         <SubjectSelection
-          disabled={!isClerkLoaded}
+          disabled={!isClerkLoaded && !clerkTimedOut}
           onSelect={(trackId) => {
-            if (!isClerkLoaded) return;
-            if (!isSignedIn) {
-              setAuthMode('sign-in');
-              navigateToRoute('/sign-in', { title: 'Sign in' });
-              setCurrentView('auth');
-              return;
-            }
             const selectedTrack = tracks.find((track) => track.id === trackId);
             if (!selectedTrack) return;
             setActiveTrackId(trackId);
@@ -1507,7 +1551,7 @@ ${
             setCurrentView('lms');
           }}
         />
-        {showOnboardingModal && isSignedIn && (
+        {showOnboardingModal && (
           <KenyanIndustryOnboarding
             initialLearnerName={clerkUser?.fullName || clerkUser?.firstName || 'Learner'}
             onCancel={() => setShowOnboardingModal(false)}
@@ -1518,7 +1562,7 @@ ${
     );
   }
 
-  if (!isClerkLoaded) {
+  if (!isClerkLoaded && !clerkTimedOut) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background dark:bg-[#1F1F1F]">
         <Spinner size="lg" />
@@ -1641,22 +1685,7 @@ ${
 
         {/* Right: Primary Student Actions (Run Code, Check Solution, Next Module) + Layout */}
         <div className="flex items-center gap-2 shrink-0">
-          {isMathLesson ? (
-            <Button
-              variant="outline"
-              size="sm"
-              data-ai-target="math-draw-setup"
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('drawnix:ai-draw'));
-              }}
-              disabled={interactionMode === 'LESSON_REFLECTION'}
-              className="h-8 gap-1.5 px-3 text-xs font-medium border-border hover:bg-secondary text-foreground shadow-xs"
-              title="Ask AI Tutor to sketch geometric setup on board"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-              <span>AI Draw Setup</span>
-            </Button>
-          ) : (
+          {!isMathLesson && (
             <Button
               variant="outline"
               size="sm"
@@ -1937,15 +1966,16 @@ ${
           <div className="flex-1 flex min-h-0">
             {activeMainWorkspaceTab === 'board' ? (
               <div className="flex-1 min-w-0 min-h-0 relative">
-                <DrawnixDigitalBoard
-                  activeNode={activeNode}
-                  initialElements={activeNode.initialBoard?.elements || []}
-                  challengeSpec={activeNode.challengeSpec}
-                  aiTimeline={activeNode.aiTimeline || []}
-                  onBoardChange={setMathBoardData}
-                  onVerify={() => handleVerifyWithTutor(null)}
-                  isVerifying={isEvaluating}
-                />
+                <AppErrorBoundary>
+                  <DrawnixDigitalBoard
+                    activeNode={activeNode}
+                    initialElements={activeNode.initialBoard?.elements || []}
+                    challengeSpec={activeNode.challengeSpec}
+                    onBoardChange={setMathBoardData}
+                    onVerify={() => handleVerifyWithTutor(null)}
+                    isVerifying={isEvaluating}
+                  />
+                </AppErrorBoundary>
               </div>
             ) : <>
             <div ref={editorContainerRef} className="flex-1 min-w-0 h-full relative bg-[#18181b]">
@@ -2227,7 +2257,7 @@ ${
                           {msg.sender === 'ai' && (
                             <button
                               onClick={() =>
-                                speakNarration(msg.text, true, null, apiConfigRef.current)
+                                speakNarration(msg.text, true)
                               }
                               title="Listen again"
                               className="hover:text-foreground text-muted-foreground transition"

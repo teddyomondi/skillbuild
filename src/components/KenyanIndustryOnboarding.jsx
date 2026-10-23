@@ -168,7 +168,7 @@ export default function KenyanIndustryOnboarding({
                 Tell Us About Your Learning Background
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Rather than forcing everyone into the same static track, CodePulse analyzes your
+                Rather than forcing everyone into the same static track, Upskill analyzes your
                 background against Kenya's Industry 4.0 market demands to synthesize a tailored course for your specific skill gap.
               </p>
             </div>

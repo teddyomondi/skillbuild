@@ -53,7 +53,7 @@ const Footer = ({ onEnterWorkspace }) => {
         <div className="flex flex-col items-start gap-y-6 max-w-sm">
           <Logo onClick={onEnterWorkspace} />
           <p className="text-sm text-muted-foreground leading-relaxed">
-            CodePulse guides learners through structured lessons with an interactive AI tutor.
+            Upskill guides learners through structured lessons with an interactive AI tutor.
           </p>
           <div className="flex items-center gap-3 pt-2">
             {isLoaded && !isSignedIn ? (
@@ -99,7 +99,7 @@ const Footer = ({ onEnterWorkspace }) => {
 
       <div className="border-t border-border pt-8 mt-16 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
         <span>
-          &copy; {new Date().getFullYear()} CodePulse Learning. All rights reserved.
+          &copy; {new Date().getFullYear()} Upskill. All rights reserved.
         </span>
         <Button variant="ghost" size="sm" asChild>
           <a

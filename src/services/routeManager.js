@@ -135,10 +135,12 @@ export function parseAppRoute(pathname = '/') {
     };
   }
 
-  // 5. Default `/` -> subject selection before the course dashboard
+  // 5. Default `/` -> platform landing & marketing overview for visitors
   return {
-    view: 'subjects',
-    path: cleanPath
+    view: 'lms',
+    subView: 'marketing',
+    isRootRedirect: true,
+    path: '/'
   };
 }
 
@@ -151,7 +153,7 @@ export function navigateToRoute(targetPath, { replace = false, title = '' } = {}
   const currentPath = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
 
   if (title && typeof document !== 'undefined') {
-    document.title = `${title} • CodePulse AI`;
+    document.title = `${title} • Upskill`;
   }
 
   if (currentPath === normalizedTarget) return;

@@ -1,6 +1,6 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { handleApi } from './server/apiHandler.js';
 
@@ -27,26 +27,32 @@ function apiMiddlewarePlugin() {
 }
 
 // Cross-Origin Isolation headers required for @webcontainer/api (SharedArrayBuffer)
-export default defineConfig({
-  plugins: [react(), apiMiddlewarePlugin()],
-  envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+export default defineConfig(({ mode }) => {
+  // Ensure all .env variables (LLM_API_KEY, LLM_PROVIDER, etc.) are available to Node server middleware
+  const env = loadEnv(mode, process.cwd(), '');
+  Object.assign(process.env, env);
+
+  return {
+    plugins: [react(), apiMiddlewarePlugin()],
+    envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
     },
-  },
-  server: {
-    port: 5173,
-    headers: {
-      'Cross-Origin-Embedder-Policy': 'credentialless',
-      'Cross-Origin-Opener-Policy': 'same-origin',
+    server: {
+      port: 5173,
+      headers: {
+        'Cross-Origin-Embedder-Policy': 'credentialless',
+        'Cross-Origin-Opener-Policy': 'same-origin',
+      },
     },
-  },
-  preview: {
-    port: 5173,
-    headers: {
-      'Cross-Origin-Embedder-Policy': 'credentialless',
-      'Cross-Origin-Opener-Policy': 'same-origin',
+    preview: {
+      port: 5173,
+      headers: {
+        'Cross-Origin-Embedder-Policy': 'credentialless',
+        'Cross-Origin-Opener-Policy': 'same-origin',
+      },
     },
-  },
+  };
 });

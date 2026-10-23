@@ -25,7 +25,7 @@ export const ROADMAP_TRACKS = [
           'index.html': `<!-- LESSON 1: Semantic HTML Foundations -->
 <main class="card">
   <span class="badge">HTML Foundations</span>
-  <h1>Welcome to CodePulse</h1>
+  <h1>Welcome to Upskill</h1>
 </main>
 `,
           'styles.css': `body {
