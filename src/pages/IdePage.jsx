@@ -146,6 +146,23 @@ export default function IdePage({
     activeTrack?.id === 'mathematics' || activeNode?.isMathBoard ? 'board' : 'code'
   );
 
+  // Clean Student Workspace Panel Visibility
+  const [showLeftSidebar, setShowLeftSidebar] = useState(false);
+  const [showPreviewPane, setShowPreviewPane] = useState(false);
+  const [showTerminalPane, setShowTerminalPane] = useState(
+    () =>
+      activeNode.challengeSpec?.targetFile !== 'index.html' &&
+      Boolean(activeNode.initialFiles['index.js'])
+  );
+  const [showTutorPane, setShowTutorPane] = useState(true);
+
+  // Resizable Panel Dimensions
+  const [leftSidebarWidth, setLeftSidebarWidth] = useState(220);
+  const [previewWidth, setPreviewWidth] = useState(360);
+  const [tutorWidth, setTutorWidth] = useState(350);
+  const [terminalHeight, setTerminalHeight] = useState(145);
+  const [draggingSplitter, setDraggingSplitter] = useState(null);
+
   useEffect(() => {
     if (activeNode?.isMathBoard || activeTrack?.id === 'mathematics') {
       setActiveMainWorkspaceTab('board');
@@ -157,21 +174,6 @@ export default function IdePage({
       setShowTutorPane(true);
     }
   }, [activeNode?.id, activeNode?.isMathBoard, activeTrack?.id]);
-
-  // Clean Student Workspace Panel Visibility
-  const [showLeftSidebar, setShowLeftSidebar] = useState(false);
-  const [showTerminalPane, setShowTerminalPane] = useState(
-    () =>
-      activeNode.challengeSpec?.targetFile !== 'index.html' &&
-      Boolean(activeNode.initialFiles['index.js'])
-  );
-  const [showTutorPane, setShowTutorPane] = useState(true);
-
-  // Resizable Panel Dimensions
-  const [leftSidebarWidth, setLeftSidebarWidth] = useState(220);
-  const [tutorWidth, setTutorWidth] = useState(350);
-  const [terminalHeight, setTerminalHeight] = useState(145);
-  const [draggingSplitter, setDraggingSplitter] = useState(null);
 
   // Lesson Interaction Mode: 'AI_STREAMING' | 'LESSON_REFLECTION' | 'STUDENT_CHALLENGE' | 'COMPLETED'
   const [interactionMode, setInteractionMode] = useState('AI_STREAMING');
