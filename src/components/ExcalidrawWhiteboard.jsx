@@ -4,11 +4,14 @@ import '@excalidraw/excalidraw/index.css';
 
 /**
  * Excalidraw Digital Whiteboard
- * Pure open-source infinite canvas with native drawing, shape, text, and arrow tools.
+ * Open-source infinite canvas with native drawing, shape, text, and arrow tools.
+ * Custom styled to hide default Excalidraw hamburger and library UI.
  */
 export default function ExcalidrawWhiteboard({
   initialElements = [],
   onBoardChange = null,
+  renderTopRightUI = null,
+  children = null,
 }) {
   const [ExcalidrawComp, setExcalidrawComp] = useState(null);
   const [loadError, setLoadError] = useState(null);
@@ -58,13 +61,38 @@ export default function ExcalidrawWhiteboard({
   }
 
   return (
-    <div className="relative h-full w-full min-h-[400px] overflow-hidden" style={{ height: 'calc(100vh - 48px)' }}>
+    <div className="excalidraw-custom-wrapper relative h-full w-full overflow-hidden">
+      <style>{`
+        /* Hide Excalidraw default hamburger menu and library sidebar buttons */
+        .excalidraw-custom-wrapper .main-menu-trigger,
+        .excalidraw-custom-wrapper [data-testid="main-menu-trigger"],
+        .excalidraw-custom-wrapper button[aria-label="Main menu"],
+        .excalidraw-custom-wrapper .sidebar-trigger,
+        .excalidraw-custom-wrapper [data-testid="sidebar-trigger"],
+        .excalidraw-custom-wrapper button[aria-label="Library"],
+        .excalidraw-custom-wrapper .dropdown-menu-button {
+          display: none !important;
+        }
+      `}</style>
       <ExcalidrawComp
         initialData={initialData}
+        UIOptions={{
+          canvasActions: {
+            changeViewBackgroundColor: true,
+            clearCanvas: true,
+            export: false,
+            loadScene: false,
+            saveToActiveFile: false,
+            toggleTheme: false,
+          },
+        }}
+        renderTopRightUI={renderTopRightUI}
         onChange={(elements, appState) => {
           onBoardChange?.({ elements, appState });
         }}
-      />
+      >
+        {children}
+      </ExcalidrawComp>
     </div>
   );
 }

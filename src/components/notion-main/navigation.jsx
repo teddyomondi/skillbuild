@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
-import { ArrowLeft, ChevronLeftSquare, MenuIcon, Search, Settings } from "lucide-react";
+import { ArrowLeft, ChevronLeftSquare, MenuIcon, Search, Settings, Sparkles } from "lucide-react";
+import { navigateToRoute } from "@/services/routeManager.js";
 import { useSearch } from "@/hooks/use-search";
 import { useSettings } from "@/hooks/use-settings";
 import { cn } from "@/lib/utils";
@@ -100,6 +101,14 @@ export const Navigation = ({
           <UserItem />
           <Item onClick={onOpenSearchBox} icon={Search} label="Search courses" isSearch />
           <Item onClick={onOpenSettings} icon={Settings} label="Settings" />
+          <Item
+            onClick={() => {
+              navigateToRoute('/onboarding/resume', { title: 'Upload Resume' });
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            icon={Sparkles}
+            label="Adapt to Resume (AI)"
+          />
         </div>
 
         <div className="mt-5">
