@@ -21,7 +21,7 @@ import CoursesPage from './pages/CoursesPage.jsx';
 import IdePage from './pages/IdePage.jsx';
 import MathBoardPage from './pages/MathBoardPage.jsx';
 
-function mergeCurriculumTracks(savedTracks = []) {
+function mergeCurriculumTracks(savedTracks = [], moduleWorkspaces = {}) {
   const validSavedTracks = (Array.isArray(savedTracks) ? savedTracks : [])
     .filter((track) => track && typeof track.id === 'string' && Array.isArray(track.nodes))
     .map((track) => ({
@@ -34,7 +34,16 @@ function mergeCurriculumTracks(savedTracks = []) {
 
   const mergedCurriculum = ROADMAP_TRACKS.map((curriculumTrack) => {
     const savedTrack = savedById.get(curriculumTrack.id);
-    if (!savedTrack) return curriculumTrack;
+    if (!savedTrack) {
+      // Check if any modules in this track were completed via moduleWorkspaces
+      const updatedNodes = curriculumTrack.nodes.map((node) => {
+        if (moduleWorkspaces?.[node.id]?.status === 'completed') {
+          return { ...node, status: 'completed' };
+        }
+        return node;
+      });
+      return { ...curriculumTrack, nodes: updatedNodes };
+    }
 
     const curriculumNodesById = new Map(
       curriculumTrack.nodes.map((node) => [node.id, node])
@@ -43,13 +52,23 @@ function mergeCurriculumTracks(savedTracks = []) {
     const savedNodeIds = new Set(validSavedNodes.map((node) => node.id));
     const existingNodes = validSavedNodes.map((savedNode) => {
       const curriculumNode = curriculumNodesById.get(savedNode.id);
+      const isWorkspaceDone = moduleWorkspaces?.[savedNode.id]?.status === 'completed';
+      const nodeStatus = isWorkspaceDone
+        ? 'completed'
+        : (savedNode.status || curriculumNode?.status || 'locked');
+
       return curriculumNode
-        ? { ...curriculumNode, ...savedNode, status: savedNode.status || curriculumNode.status }
-        : savedNode;
+        ? { ...curriculumNode, ...savedNode, status: nodeStatus }
+        : { ...savedNode, status: nodeStatus };
     });
     const addedCurriculumNodes = curriculumTrack.nodes.filter(
       (node) => !savedNodeIds.has(node.id)
-    );
+    ).map((node) => {
+      if (moduleWorkspaces?.[node.id]?.status === 'completed') {
+        return { ...node, status: 'completed' };
+      }
+      return node;
+    });
 
     return {
       ...savedTrack,
@@ -76,14 +95,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (clerkUser?.id) {
-      setAuthenticatedLearnerId(clerkUser.id);
-    }
-  }, [clerkUser?.id]);
-
-  // Initial state hydration
-  const initialSavedState = useMemo(() => loadLocalLearnerState(), []);
+  // Initial route from URL
   const initialRoute = useMemo(
     () =>
       parseAppRoute(
@@ -100,56 +112,119 @@ export default function App() {
     () => initialRoute.view === 'onboarding'
   );
 
-  const [tracks, setTracks] = useState(() =>
-    mergeCurriculumTracks(initialSavedState?.tracks || ROADMAP_TRACKS)
-  );
+  // Curriculum & workspace state
+  const [tracks, setTracks] = useState(() => ROADMAP_TRACKS);
   const [activeTrackId, setActiveTrackId] = useState(
     () => initialRoute.trackId || 'frontend'
   );
   const [activeNodeId, setActiveNodeId] = useState(
-    () =>
-      initialRoute.nodeId ||
-      initialSavedState?.activeNodeId ||
-      'html-semantic-structure'
+    () => initialRoute.nodeId || 'html-semantic-structure'
   );
-  const [moduleWorkspaces, setModuleWorkspaces] = useState(
-    () => initialSavedState?.moduleWorkspaces || {}
-  );
+  const [moduleWorkspaces, setModuleWorkspaces] = useState({});
 
-  // Sync with remote Supabase store
+  // Account hydration state
+  const [isHydrated, setIsHydrated] = useState(false);
+  const activeLearnerIdRef = useRef(null);
+
+  // Sync user progress tied directly to their authenticated account
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
+    if (!isClerkLoaded && !clerkTimedOut) return;
+
+    const currentUserId = isSignedIn && clerkUser?.id ? clerkUser.id : null;
+
+    // Prevent re-hydrating the same user
+    if (currentUserId === activeLearnerIdRef.current && isHydrated) {
+      return;
+    }
+
+    activeLearnerIdRef.current = currentUserId;
+    setAuthenticatedLearnerId(currentUserId);
 
     let cancelled = false;
-    fetchLearnerStateFromSupabase().then((remoteState) => {
-      if (cancelled || !remoteState) return;
-      setTracks(mergeCurriculumTracks(remoteState.tracks || []));
-      setModuleWorkspaces(remoteState.moduleWorkspaces || {});
 
-      const targetTrackId = initialRoute.trackId || remoteState.activeTrackId || 'frontend';
-      const targetNodeId = initialRoute.nodeId || (targetTrackId === remoteState.activeTrackId ? remoteState.activeNodeId : null);
-      setActiveTrackId(targetTrackId);
-      if (targetNodeId) setActiveNodeId(targetNodeId);
-    });
+    if (currentUserId) {
+      setIsHydrated(false);
+
+      // 1. Instantly load local cache for this specific user if available
+      const localCached = loadLocalLearnerState(currentUserId);
+      if (localCached) {
+        if (localCached.tracks?.length) {
+          setTracks(mergeCurriculumTracks(localCached.tracks, localCached.moduleWorkspaces));
+        }
+        if (localCached.moduleWorkspaces) {
+          setModuleWorkspaces(localCached.moduleWorkspaces);
+        }
+        if (localCached.activeTrackId) {
+          setActiveTrackId(localCached.activeTrackId);
+        }
+        if (localCached.activeNodeId) {
+          setActiveNodeId(localCached.activeNodeId);
+        }
+      }
+
+      // 2. Fetch authoritative state from Supabase for this user's account
+      if (isSupabaseConfigured()) {
+        fetchLearnerStateFromSupabase(null, currentUserId).then((remoteState) => {
+          if (cancelled) return;
+
+          if (remoteState && remoteState.exists) {
+            // User has existing progress in Supabase!
+            const merged = mergeCurriculumTracks(remoteState.tracks || [], remoteState.moduleWorkspaces);
+            setTracks(merged);
+            setModuleWorkspaces(remoteState.moduleWorkspaces || {});
+            if (remoteState.activeTrackId) {
+              setActiveTrackId(remoteState.activeTrackId);
+            }
+            if (remoteState.activeNodeId) {
+              setActiveNodeId(remoteState.activeNodeId);
+            }
+          } else if (remoteState && !remoteState.exists) {
+            // New user account: save initial profile to Supabase
+            saveLearnerStateToSupabaseAndLocal({
+              activeTrackId: initialRoute.trackId || 'frontend',
+              activeNodeId: initialRoute.nodeId || 'html-semantic-structure',
+              tracks: ROADMAP_TRACKS,
+              moduleWorkspaces: {},
+              learnerIdOverride: currentUserId,
+              displayName: clerkUser?.fullName || clerkUser?.firstName || 'Student'
+            });
+          }
+
+          setIsHydrated(true);
+        });
+      } else {
+        setIsHydrated(true);
+      }
+    } else {
+      // User signed out: reset workspace to defaults so next user doesn't see old progress
+      setTracks(ROADMAP_TRACKS);
+      setModuleWorkspaces({});
+      setIsHydrated(true);
+    }
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isClerkLoaded, clerkTimedOut, isSignedIn, clerkUser?.id]);
 
-  // Auto-save learner state
+  // Auto-save learner progress (only once account state has been hydrated)
   useEffect(() => {
+    if (!isHydrated || !isSignedIn || !clerkUser?.id) return;
+
+    const currentUserId = clerkUser.id;
     const timer = setTimeout(async () => {
       await saveLearnerStateToSupabaseAndLocal({
         activeTrackId,
         activeNodeId,
         tracks,
-        moduleWorkspaces
+        moduleWorkspaces,
+        learnerIdOverride: currentUserId,
+        displayName: clerkUser?.fullName || clerkUser?.firstName || 'Student'
       });
     }, 650);
 
     return () => clearTimeout(timer);
-  }, [tracks, activeTrackId, activeNodeId, moduleWorkspaces]);
+  }, [tracks, activeTrackId, activeNodeId, moduleWorkspaces, isHydrated, isSignedIn, clerkUser?.id]);
 
   // Auth redirect handler: when user finishes signing in, guide them to /subjects
   const prevSignedInRef = useRef(isSignedIn);
@@ -330,7 +405,6 @@ export default function App() {
   }
 
   // ROUTE 4: Interactive Learning Environment (`/learn/:trackId/:nodeId`)
-  // If track is mathematics, load dedicated full-screen MathBoardPage (Excalidraw)
   if (activeTrackId === 'mathematics') {
     return (
       <MathBoardPage
