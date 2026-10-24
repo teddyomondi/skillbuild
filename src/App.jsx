@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useAuth, useUser } from '@clerk/clerk-react';
+import Spinner from './components/ui/spinner.jsx';
 import { ROADMAP_TRACKS } from './data/roadmapCurriculum.js';
 import {
   loadLocalLearnerState,
@@ -14,12 +15,13 @@ import {
   buildCourseTrackRoute,
   navigateToRoute
 } from './services/routeManager.js';
-import KenyanIndustryOnboarding from './components/KenyanIndustryOnboarding.jsx';
 import AuthPage from './pages/AuthPage.jsx';
 import SubjectsPage from './pages/SubjectsPage.jsx';
-import CoursesPage from './pages/CoursesPage.jsx';
-import IdePage from './pages/IdePage.jsx';
-import MathBoardPage from './pages/MathBoardPage.jsx';
+
+const CoursesPage = lazy(() => import('./pages/CoursesPage.jsx'));
+const IdePage = lazy(() => import('./pages/IdePage.jsx'));
+const MathBoardPage = lazy(() => import('./pages/MathBoardPage.jsx'));
+const KenyanIndustryOnboarding = lazy(() => import('./components/KenyanIndustryOnboarding.jsx'));
 
 function mergeCurriculumTracks(savedTracks = [], moduleWorkspaces = {}) {
   const validSavedTracks = (Array.isArray(savedTracks) ? savedTracks : [])
@@ -384,7 +386,13 @@ export default function App() {
   // ROUTE 3: Courses & LMS Dashboard (`/courses`, `/courses/:trackId`, `/welcome`, `/`)
   if (currentView === 'lms' || !isSignedIn) {
     return (
-      <>
+      <Suspense
+        fallback={
+          <div className="h-screen w-screen flex items-center justify-center bg-background dark:bg-[#191919]">
+            <Spinner size="lg" />
+          </div>
+        }
+      >
         <CoursesPage
           tracks={tracks}
           activeTrackId={activeTrackId}
@@ -400,29 +408,43 @@ export default function App() {
             onCompleteOnboarding={handleCompleteOnboarding}
           />
         )}
-      </>
+      </Suspense>
     );
   }
 
   // ROUTE 4: Interactive Learning Environment (`/learn/:trackId/:nodeId`)
   if (activeTrackId === 'mathematics') {
     return (
-      <MathBoardPage
-        tracks={tracks}
-        setTracks={setTracks}
-        activeTrackId={activeTrackId}
-        setActiveTrackId={setActiveTrackId}
-        activeNodeId={activeNodeId}
-        setActiveNodeId={setActiveNodeId}
-        moduleWorkspaces={moduleWorkspaces}
-        setModuleWorkspaces={setModuleWorkspaces}
-        onBackToCourses={handleBackToCourses}
-      />
+      <Suspense
+        fallback={
+          <div className="h-screen w-screen flex items-center justify-center bg-background dark:bg-[#191919]">
+            <Spinner size="lg" />
+          </div>
+        }
+      >
+        <MathBoardPage
+          tracks={tracks}
+          setTracks={setTracks}
+          activeTrackId={activeTrackId}
+          setActiveTrackId={setActiveTrackId}
+          activeNodeId={activeNodeId}
+          setActiveNodeId={setActiveNodeId}
+          moduleWorkspaces={moduleWorkspaces}
+          setModuleWorkspaces={setModuleWorkspaces}
+          onBackToCourses={handleBackToCourses}
+        />
+      </Suspense>
     );
   }
 
   return (
-    <>
+    <Suspense
+      fallback={
+        <div className="h-screen w-screen flex items-center justify-center bg-background dark:bg-[#191919]">
+          <Spinner size="lg" />
+        </div>
+      }
+    >
       <IdePage
         tracks={tracks}
         setTracks={setTracks}
@@ -441,6 +463,6 @@ export default function App() {
           onCompleteOnboarding={handleCompleteOnboarding}
         />
       )}
-    </>
+    </Suspense>
   );
 }

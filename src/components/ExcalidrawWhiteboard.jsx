@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Spinner from '@/components/ui/spinner.jsx';
 import '@excalidraw/excalidraw/index.css';
 
@@ -31,6 +31,15 @@ export default function ExcalidrawWhiteboard({
     };
   }, []);
 
+  const initialData = useMemo(() => ({
+    elements: initialElements || [],
+    appState: {
+      viewBackgroundColor: '#18181b',
+      theme: 'dark',
+      gridSize: 20,
+    },
+  }), []);
+
   if (loadError) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center text-muted-foreground">
@@ -51,14 +60,7 @@ export default function ExcalidrawWhiteboard({
   return (
     <div className="relative h-full w-full min-h-[400px] overflow-hidden" style={{ height: 'calc(100vh - 48px)' }}>
       <ExcalidrawComp
-        initialData={{
-          elements: initialElements || [],
-          appState: {
-            viewBackgroundColor: '#18181b',
-            theme: 'dark',
-            gridSize: 20,
-          },
-        }}
+        initialData={initialData}
         onChange={(elements, appState) => {
           onBoardChange?.({ elements, appState });
         }}

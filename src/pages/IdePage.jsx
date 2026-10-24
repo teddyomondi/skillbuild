@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import Editor from '@monaco-editor/react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { toast, Toaster } from 'sonner';
 import {
   Terminal as TerminalIcon,
@@ -48,9 +47,12 @@ import { getOrBootWebContainer, runCodeInWorkspace } from '@/services/runtimeEng
 import { UserButton } from '@clerk/clerk-react';
 import { Button } from '@/components/ui/button.jsx';
 import { cn } from '@/lib/utils.js';
+import Spinner from '@/components/ui/spinner.jsx';
 import AiScreenCursor from '@/components/AiScreenCursor.jsx';
-import ExcalidrawWhiteboard from '@/components/ExcalidrawWhiteboard.jsx';
 import AppErrorBoundary from '@/components/AppErrorBoundary.jsx';
+
+const Editor = lazy(() => import('@monaco-editor/react'));
+const ExcalidrawWhiteboard = lazy(() => import('@/components/ExcalidrawWhiteboard.jsx'));
 
 export default function IdePage({
   tracks,
@@ -1465,10 +1467,18 @@ ${
             {activeMainWorkspaceTab === 'board' ? (
               <div className="flex-1 min-w-0 min-h-0 relative h-full w-full">
                 <AppErrorBoundary>
-                  <ExcalidrawWhiteboard
-                    initialElements={activeNode.initialBoard?.elements || []}
-                    onBoardChange={setMathBoardData}
-                  />
+                  <Suspense
+                    fallback={
+                      <div className="h-full w-full flex items-center justify-center bg-background dark:bg-[#121212]">
+                        <Spinner size="lg" />
+                      </div>
+                    }
+                  >
+                    <ExcalidrawWhiteboard
+                      initialElements={activeNode.initialBoard?.elements || []}
+                      onBoardChange={setMathBoardData}
+                    />
+                  </Suspense>
                 </AppErrorBoundary>
               </div>
             ) : activeMainWorkspaceTab === 'preview' ? (
@@ -1491,94 +1501,102 @@ ${
               <>
                 <div ref={editorContainerRef} className="flex-1 min-w-0 h-full relative bg-[#18181b]">
                   {activeFile ? (
-                    <Editor
-                      height="100%"
-                      theme="notion-dark"
-                      path={activeFile}
-                      language={
-                        activeFile.endsWith('.json')
-                          ? 'json'
-                          : activeFile.endsWith('.css')
-                          ? 'css'
-                          : activeFile.endsWith('.html')
-                          ? 'html'
-                          : 'javascript'
+                    <Suspense
+                      fallback={
+                        <div className="h-full w-full flex items-center justify-center bg-[#18181b]">
+                          <Spinner size="lg" />
+                        </div>
                       }
-                      value={files[activeFile] || ''}
-                      onChange={(val) => handleStudentForkOrEdit(val ?? '')}
-                      onValidate={(markers) => setEditorMarkers(markers || [])}
-                      onMount={(editor, monaco) => {
-                        editorRef.current = editor;
-                        monacoRef.current = monaco;
-
-                        monaco.editor.defineTheme('notion-dark', {
-                          base: 'vs-dark',
-                          inherit: true,
-                          rules: [
-                            { token: 'comment', foreground: '71717a', fontStyle: 'italic' },
-                            { token: 'keyword', foreground: 'fafafa', fontStyle: 'bold' },
-                            { token: 'string', foreground: 'a7f3d0' },
-                            { token: 'number', foreground: 'fde68a' },
-                          ],
-                          colors: {
-                            'editor.background': '#18181b',
-                            'editor.foreground': '#f4f4f5',
-                            'editorLineNumber.foreground': '#52525b',
-                            'editorLineNumber.activeForeground': '#fafafa',
-                            'editor.lineHighlightBackground': '#27272a40',
-                            'editor.selectionBackground': '#3f3f4660',
-                            'editorCursor.foreground': '#fafafa',
-                          },
-                        });
-                        monaco.editor.setTheme('notion-dark');
-
-                        editor.onDidChangeCursorPosition((e) => {
-                          const pos = {
-                            lineNumber: e.position.lineNumber,
-                            column: e.position.column,
-                          };
-                          setCursorPosition(pos);
-                          const now = Date.now();
-                          if (now - lastCursorLogTimeRef.current > 4000) {
-                            lastCursorLogTimeRef.current = now;
-                            const model = editor.getModel();
-                            const lineContent = model
-                              ? model.getLineContent(pos.lineNumber).trim()
-                              : '';
-                            recordEvent(
-                              'cursor_move',
-                              `Ln ${pos.lineNumber}, Col ${pos.column}${
-                                lineContent ? ` ("${lineContent.slice(0, 40)}")` : ''
-                              }`
-                            );
-                          }
-                        });
-
-                        editor.onDidChangeCursorSelection((e) => {
-                          const model = editor.getModel();
-                          if (!model) return;
-                          const sel = model.getValueInRange(e.selection).trim();
-                          setSelectedText(sel);
-                        });
-
-                        if (!hasAutoStartedInitialRef.current) {
-                          hasAutoStartedInitialRef.current = true;
-                          setTimeout(() => {
-                            startAiLiveLesson(0);
-                          }, 220);
+                    >
+                      <Editor
+                        height="100%"
+                        theme="notion-dark"
+                        path={activeFile}
+                        language={
+                          activeFile.endsWith('.json')
+                            ? 'json'
+                            : activeFile.endsWith('.css')
+                            ? 'css'
+                            : activeFile.endsWith('.html')
+                            ? 'html'
+                            : 'javascript'
                         }
-                      }}
-                      options={{
-                        readOnly: interactionMode === 'LESSON_REFLECTION',
-                        fontSize: 13.5,
-                        fontFamily: "'Cascadia Code', 'Fira Code', Consolas, monospace",
-                        minimap: { enabled: false },
-                        scrollBeyondLastLine: false,
-                        automaticLayout: true,
-                        padding: { top: 14 },
-                        lineNumbersMinChars: 3,
-                      }}
-                    />
+                        value={files[activeFile] || ''}
+                        onChange={(val) => handleStudentForkOrEdit(val ?? '')}
+                        onValidate={(markers) => setEditorMarkers(markers || [])}
+                        onMount={(editor, monaco) => {
+                          editorRef.current = editor;
+                          monacoRef.current = monaco;
+
+                          monaco.editor.defineTheme('notion-dark', {
+                            base: 'vs-dark',
+                            inherit: true,
+                            rules: [
+                              { token: 'comment', foreground: '71717a', fontStyle: 'italic' },
+                              { token: 'keyword', foreground: 'fafafa', fontStyle: 'bold' },
+                              { token: 'string', foreground: 'a7f3d0' },
+                              { token: 'number', foreground: 'fde68a' },
+                            ],
+                            colors: {
+                              'editor.background': '#18181b',
+                              'editor.foreground': '#f4f4f5',
+                              'editorLineNumber.foreground': '#52525b',
+                              'editorLineNumber.activeForeground': '#fafafa',
+                              'editor.lineHighlightBackground': '#27272a40',
+                              'editor.selectionBackground': '#3f3f4660',
+                              'editorCursor.foreground': '#fafafa',
+                            },
+                          });
+                          monaco.editor.setTheme('notion-dark');
+
+                          editor.onDidChangeCursorPosition((e) => {
+                            const pos = {
+                              lineNumber: e.position.lineNumber,
+                              column: e.position.column,
+                            };
+                            setCursorPosition(pos);
+                            const now = Date.now();
+                            if (now - lastCursorLogTimeRef.current > 4000) {
+                              lastCursorLogTimeRef.current = now;
+                              const model = editor.getModel();
+                              const lineContent = model
+                                ? model.getLineContent(pos.lineNumber).trim()
+                                : '';
+                              recordEvent(
+                                'cursor_move',
+                                `Ln ${pos.lineNumber}, Col ${pos.column}${
+                                  lineContent ? ` ("${lineContent.slice(0, 40)}")` : ''
+                                }`
+                              );
+                            }
+                          });
+
+                          editor.onDidChangeCursorSelection((e) => {
+                            const model = editor.getModel();
+                            if (!model) return;
+                            const sel = model.getValueInRange(e.selection).trim();
+                            setSelectedText(sel);
+                          });
+
+                          if (!hasAutoStartedInitialRef.current) {
+                            hasAutoStartedInitialRef.current = true;
+                            setTimeout(() => {
+                              startAiLiveLesson(0);
+                            }, 220);
+                          }
+                        }}
+                        options={{
+                          readOnly: interactionMode === 'LESSON_REFLECTION',
+                          fontSize: 13.5,
+                          fontFamily: "'Cascadia Code', 'Fira Code', Consolas, monospace",
+                          minimap: { enabled: false },
+                          scrollBeyondLastLine: false,
+                          automaticLayout: true,
+                          padding: { top: 14 },
+                          lineNumbersMinChars: 3,
+                        }}
+                      />
+                    </Suspense>
                   ) : null}
                 </div>
               </>

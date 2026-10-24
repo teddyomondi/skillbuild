@@ -1,12 +1,14 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, lazy, Suspense } from 'react';
 import { ArrowLeft, CheckCircle2, ChevronRight, ArrowRight } from 'lucide-react';
 import { UserButton } from '@clerk/clerk-react';
 import { Button } from '@/components/ui/button.jsx';
+import Spinner from '@/components/ui/spinner.jsx';
 import { cn } from '@/lib/utils.js';
 import { ROADMAP_TRACKS } from '@/data/roadmapCurriculum.js';
 import { buildIdeRoute, navigateToRoute } from '@/services/routeManager.js';
 import { toast } from 'sonner';
-import ExcalidrawWhiteboard from '@/components/ExcalidrawWhiteboard.jsx';
+
+const ExcalidrawWhiteboard = lazy(() => import('@/components/ExcalidrawWhiteboard.jsx'));
 
 export default function MathBoardPage({
   tracks,
@@ -47,7 +49,7 @@ export default function MathBoardPage({
     return null;
   }, [activeTrack, currentModuleIndex]);
 
-  const [boardData, setBoardData] = useState(() => moduleWorkspaces[activeNode.id]?.boardData || null);
+  const boardDataRef = useRef(moduleWorkspaces[activeNode.id]?.boardData || null);
 
   const handleSelectNode = (node) => {
     setActiveNodeId(node.id);
@@ -78,7 +80,7 @@ export default function MathBoardPage({
       ...prev,
       [activeNode.id]: {
         ...(prev[activeNode.id] || {}),
-        boardData,
+        boardData: boardDataRef.current,
         status: 'completed',
         updatedAt: new Date().toISOString(),
       },
@@ -142,10 +144,20 @@ export default function MathBoardPage({
 
       {/* FULL-SCREEN INFINITE EXCALIDRAW BOARD */}
       <main className="flex-1 w-full h-full relative overflow-hidden">
-        <ExcalidrawWhiteboard
-          initialElements={activeNode.initialBoard?.elements || []}
-          onBoardChange={(data) => setBoardData(data)}
-        />
+        <Suspense
+          fallback={
+            <div className="h-full w-full flex items-center justify-center bg-background dark:bg-[#121212]">
+              <Spinner size="lg" />
+            </div>
+          }
+        >
+          <ExcalidrawWhiteboard
+            initialElements={activeNode.initialBoard?.elements || []}
+            onBoardChange={(data) => {
+              boardDataRef.current = data;
+            }}
+          />
+        </Suspense>
       </main>
     </div>
   );
