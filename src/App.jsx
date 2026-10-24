@@ -22,7 +22,6 @@ import OnboardingPage from './pages/OnboardingPage.jsx';
 const CoursesPage = lazy(() => import('./pages/CoursesPage.jsx'));
 const IdePage = lazy(() => import('./pages/IdePage.jsx'));
 const MathBoardPage = lazy(() => import('./pages/MathBoardPage.jsx'));
-const KenyanIndustryOnboarding = lazy(() => import('./components/KenyanIndustryOnboarding.jsx'));
 
 function mergeCurriculumTracks(savedTracks = [], moduleWorkspaces = {}) {
   const validSavedTracks = (Array.isArray(savedTracks) ? savedTracks : [])
@@ -414,13 +413,6 @@ export default function App() {
           onBackToSubjects={handleBackToSubjects}
           isSignedIn={isSignedIn}
         />
-        {showOnboardingModal && (
-          <KenyanIndustryOnboarding
-            initialLearnerName={clerkUser?.fullName || clerkUser?.firstName || 'Learner'}
-            onCancel={() => setShowOnboardingModal(false)}
-            onCompleteOnboarding={handleCompleteOnboarding}
-          />
-        )}
       </Suspense>
     );
   }
@@ -469,13 +461,6 @@ export default function App() {
         setModuleWorkspaces={setModuleWorkspaces}
         onBackToCourses={handleBackToCourses}
       />
-      {showOnboardingModal && (
-        <KenyanIndustryOnboarding
-          initialLearnerName={clerkUser?.fullName || clerkUser?.firstName || 'Learner'}
-          onCancel={() => setShowOnboardingModal(false)}
-          onCompleteOnboarding={handleCompleteOnboarding}
-        />
-      )}
     </Suspense>
   );
 }
