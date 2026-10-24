@@ -77,7 +77,10 @@ export default function MathBoardPage({
 
   // Board Data Reference (stores live Excalidraw elements & state)
   const boardDataRef = useRef(moduleWorkspaces[activeNode.id]?.boardData || null);
-  const [boardData, setBoardData] = useState(() => moduleWorkspaces[activeNode.id]?.boardData || null);
+
+  useEffect(() => {
+    boardDataRef.current = moduleWorkspaces[activeNode.id]?.boardData || null;
+  }, [activeNode.id, moduleWorkspaces]);
 
   // UI State: Top Bar Visibility & AI Tutor Panel Drawer
   const [showTopBar, setShowTopBar] = useState(true);
@@ -166,7 +169,7 @@ export default function MathBoardPage({
       ]);
     }
 
-    const currentBoard = boardDataRef.current || boardData || {};
+    const currentBoard = boardDataRef.current || {};
     const snapshot = buildInterfaceContextSnapshot({
       currentView: 'ide',
       activeTrack,
@@ -385,7 +388,6 @@ export default function MathBoardPage({
               initialElements={activeNode.initialBoard?.elements || []}
               onBoardChange={(data) => {
                 boardDataRef.current = data;
-                setBoardData(data);
               }}
             />
           </Suspense>
