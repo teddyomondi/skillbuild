@@ -19,6 +19,7 @@ import AuthPage from './pages/AuthPage.jsx';
 import SubjectsPage from './pages/SubjectsPage.jsx';
 import CoursesPage from './pages/CoursesPage.jsx';
 import IdePage from './pages/IdePage.jsx';
+import MathBoardPage from './pages/MathBoardPage.jsx';
 
 function mergeCurriculumTracks(savedTracks = []) {
   const validSavedTracks = (Array.isArray(savedTracks) ? savedTracks : [])
@@ -328,7 +329,24 @@ export default function App() {
     );
   }
 
-  // ROUTE 4: Interactive Learning IDE (`/learn/:trackId/:nodeId`)
+  // ROUTE 4: Interactive Learning Environment (`/learn/:trackId/:nodeId`)
+  // If track is mathematics, load dedicated full-screen MathBoardPage (Excalidraw)
+  if (activeTrackId === 'mathematics') {
+    return (
+      <MathBoardPage
+        tracks={tracks}
+        setTracks={setTracks}
+        activeTrackId={activeTrackId}
+        setActiveTrackId={setActiveTrackId}
+        activeNodeId={activeNodeId}
+        setActiveNodeId={setActiveNodeId}
+        moduleWorkspaces={moduleWorkspaces}
+        setModuleWorkspaces={setModuleWorkspaces}
+        onBackToCourses={handleBackToCourses}
+      />
+    );
+  }
+
   return (
     <>
       <IdePage

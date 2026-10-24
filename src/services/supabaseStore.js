@@ -11,22 +11,30 @@ import { ROADMAP_TRACKS } from '../data/roadmapCurriculum.js';
 import { createDynamicDetourNode } from './socraticAiTutor.js';
 import { compileChallengeEvaluator } from './lessonDevelopmentEngine.js';
 
-const LOCAL_STATE_KEY = 'codepulse_learner_state_v1';
+const LEGACY_LOCAL_STATE_KEY = 'codepulse_learner_state_v1';
 const LEARNER_ID_KEY = 'codepulse_learner_id_v1';
-const SUPABASE_CONFIG_KEY = 'codepulse_supabase_config_v1';
 
 let cachedSupabaseClient = null;
 let cachedClientSignature = '';
 let activeClerkUserId = null;
+
+export function getLocalStorageKey(learnerId = null) {
+  const id = learnerId || activeClerkUserId || (typeof window !== 'undefined' ? window.localStorage.getItem(LEARNER_ID_KEY) : null);
+  return id ? `codepulse_learner_state_v2_${id}` : 'codepulse_learner_state_v2_guest';
+}
 
 /**
  * Sets the authenticated Clerk user ID as the active learner ID for Supabase & local persistence.
  */
 export function setAuthenticatedLearnerId(clerkUserId) {
   activeClerkUserId = clerkUserId || null;
-  if (typeof window !== 'undefined' && clerkUserId) {
+  if (typeof window !== 'undefined') {
     try {
-      window.localStorage.setItem(LEARNER_ID_KEY, clerkUserId);
+      if (clerkUserId) {
+        window.localStorage.setItem(LEARNER_ID_KEY, clerkUserId);
+      } else {
+        window.localStorage.removeItem(LEARNER_ID_KEY);
+      }
     } catch {
       // ignore
     }
@@ -130,7 +138,6 @@ export function rehydrateTracksWithEvaluators(savedTracks = null) {
   );
   if (validTracks.length === 0) return ROADMAP_TRACKS;
 
-  // Build a lookup map of all built-in nodes by ID
   const builtInNodeMap = new Map();
   for (const track of ROADMAP_TRACKS) {
     for (const node of track.nodes) {
@@ -158,7 +165,6 @@ export function rehydrateTracksWithEvaluators(savedTracks = null) {
         };
       }
 
-      // Check if custom node has declarative patterns for compileChallengeEvaluator
       if (savedNode.challengeSpec?.requiredPatterns?.length || savedNode.isCustomGenerated) {
         return {
           ...savedNode,
@@ -169,7 +175,6 @@ export function rehydrateTracksWithEvaluators(savedTracks = null) {
         };
       }
 
-      // Custom / Adaptive Detour Module: re-attach dynamic evaluator based on conceptTag & title
       const dynamicTemplate = createDynamicDetourNode(
         savedNode.conceptTag || 'js-functions-fundamentals',
         savedNode.title || 'Custom Concept Module',
@@ -192,7 +197,6 @@ export function rehydrateTracksWithEvaluators(savedTracks = null) {
       };
     });
 
-    // Also include any official nodes from baseTrack that aren't in savedTrack
     const savedNodeIds = new Set(savedTrack.nodes.map((n) => n.id));
     const missingOfficialNodes = (baseTrack.nodes || []).filter((n) => !savedNodeIds.has(n.id));
 
@@ -203,7 +207,6 @@ export function rehydrateTracksWithEvaluators(savedTracks = null) {
     };
   });
 
-  // Ensure any built-in track from ROADMAP_TRACKS that was not in savedTracks is added!
   const savedTrackIds = new Set(validTracks.map((t) => t.id));
   const missingOfficialTracks = ROADMAP_TRACKS.filter((t) => !savedTrackIds.has(t.id));
 
@@ -214,14 +217,18 @@ export function rehydrateTracksWithEvaluators(savedTracks = null) {
  * Loads the learner's saved state synchronously from localStorage for instant boot,
  * before async Supabase hydration completes.
  */
-export function loadLocalLearnerState() {
+export function loadLocalLearnerState(learnerId = null) {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(LOCAL_STATE_KEY);
+    const key = getLocalStorageKey(learnerId);
+    let raw = window.localStorage.getItem(key);
+    if (!raw && !learnerId) {
+      raw = window.localStorage.getItem(LEGACY_LOCAL_STATE_KEY);
+    }
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return {
-      learnerId: parsed.learnerId || getOrCreateLearnerId(),
+      learnerId: parsed.learnerId || learnerId || getOrCreateLearnerId(),
       activeTrackId: parsed.activeTrackId || 'frontend',
       activeNodeId: parsed.activeNodeId || 'html-semantic-structure',
       tracks: rehydrateTracksWithEvaluators(parsed.tracks),
@@ -243,17 +250,19 @@ export async function saveLearnerStateToSupabaseAndLocal({
   tracks,
   moduleWorkspaces = {},
   activeModulePayload = null,
-  supabaseConfig = null
+  supabaseConfig = null,
+  learnerIdOverride = null,
+  displayName = null
 }) {
-  const learnerId = getOrCreateLearnerId();
+  const learnerId = learnerIdOverride || activeClerkUserId || getOrCreateLearnerId();
   const serializedTracks = serializeTracksForStorage(tracks);
   const nowIso = new Date().toISOString();
 
-  // 1. Always persist immediately to localStorage so zero work is ever lost
+  // 1. Persist to localStorage with account-specific key
   if (typeof window !== 'undefined') {
     try {
       window.localStorage.setItem(
-        LOCAL_STATE_KEY,
+        getLocalStorageKey(learnerId),
         JSON.stringify({
           learnerId,
           activeTrackId,
@@ -268,7 +277,7 @@ export async function saveLearnerStateToSupabaseAndLocal({
     }
   }
 
-  // 2. If Supabase is configured, upsert profile + module progress to Supabase database
+  // 2. Sync to Supabase
   const supabase = getSupabaseClient(supabaseConfig);
   if (!supabase) {
     return { syncedToSupabase: false, learnerId, updatedAt: nowIso };
@@ -278,6 +287,7 @@ export async function saveLearnerStateToSupabaseAndLocal({
     const { error: profileError } = await supabase.from('learner_profiles').upsert(
       {
         learner_id: learnerId,
+        display_name: displayName || 'Student',
         active_track_id: activeTrackId,
         active_node_id: activeNodeId,
         tracks_snapshot: serializedTracks,
@@ -290,29 +300,84 @@ export async function saveLearnerStateToSupabaseAndLocal({
       throw profileError;
     }
 
-    if (activeModulePayload && activeModulePayload.nodeId) {
-      const { error: moduleError } = await supabase
-        .from('learner_module_progress')
-        .upsert(
-          {
-            learner_id: learnerId,
-            track_id: activeModulePayload.trackId || activeTrackId,
-            node_id: activeModulePayload.nodeId,
-            node_title: activeModulePayload.nodeTitle || '',
-            status: activeModulePayload.status || 'in-progress',
-            is_custom_module: Boolean(activeModulePayload.isCustomModule),
-            concept_tag: activeModulePayload.conceptTag || null,
-            saved_files: activeModulePayload.files || {},
-            attempt_count: activeModulePayload.attemptCount || 0,
-            tutor_messages: (activeModulePayload.tutorMessages || []).slice(-25),
-            custom_module_definition: activeModulePayload.customModuleDefinition || null,
-            updated_at: nowIso
-          },
-          { onConflict: 'learner_id,track_id,node_id' }
-        );
+    // Prepare rows for learner_module_progress
+    const rowsToUpsert = [];
 
-      if (moduleError) {
-        throw moduleError;
+    if (activeModulePayload && activeModulePayload.nodeId) {
+      rowsToUpsert.push({
+        learner_id: learnerId,
+        track_id: activeModulePayload.trackId || activeTrackId,
+        node_id: activeModulePayload.nodeId,
+        node_title: activeModulePayload.nodeTitle || '',
+        status: activeModulePayload.status || 'in-progress',
+        is_custom_module: Boolean(activeModulePayload.isCustomModule),
+        concept_tag: activeModulePayload.conceptTag || null,
+        saved_files: activeModulePayload.files || {},
+        attempt_count: activeModulePayload.attemptCount || 0,
+        tutor_messages: (activeModulePayload.tutorMessages || []).slice(-25),
+        custom_module_definition: activeModulePayload.customModuleDefinition || null,
+        updated_at: nowIso
+      });
+    }
+
+    if (moduleWorkspaces && typeof moduleWorkspaces === 'object') {
+      const existingNodeIds = new Set(rowsToUpsert.map((r) => r.node_id));
+      for (const [nodeId, ws] of Object.entries(moduleWorkspaces)) {
+        if (!existingNodeIds.has(nodeId) && ws && (ws.files || ws.status || ws.attemptCount || ws.tutorMessages?.length)) {
+          let nodeTitle = '';
+          let trackId = activeTrackId;
+          let isCustom = false;
+          let conceptTag = null;
+          let customDef = null;
+
+          for (const t of tracks || []) {
+            const foundNode = t.nodes?.find((n) => n.id === nodeId);
+            if (foundNode) {
+              trackId = t.id;
+              nodeTitle = foundNode.title || '';
+              isCustom = Boolean(foundNode.isDetour || foundNode.isCustomGenerated);
+              conceptTag = foundNode.conceptTag || null;
+              if (foundNode.isDetour) {
+                customDef = {
+                  id: foundNode.id,
+                  title: foundNode.title,
+                  category: foundNode.category,
+                  conceptTag: foundNode.conceptTag,
+                  reason: foundNode.reason,
+                  description: foundNode.description,
+                  initialFiles: foundNode.initialFiles,
+                  aiTimeline: foundNode.aiTimeline
+                };
+              }
+              break;
+            }
+          }
+
+          rowsToUpsert.push({
+            learner_id: learnerId,
+            track_id: trackId,
+            node_id: nodeId,
+            node_title: nodeTitle,
+            status: ws.status || 'in-progress',
+            is_custom_module: isCustom,
+            concept_tag: conceptTag,
+            saved_files: ws.files || {},
+            attempt_count: ws.attemptCount || 0,
+            tutor_messages: (ws.tutorMessages || []).slice(-25),
+            custom_module_definition: customDef,
+            updated_at: ws.updatedAt || nowIso
+          });
+        }
+      }
+    }
+
+    if (rowsToUpsert.length > 0) {
+      const { error: modulesError } = await supabase
+        .from('learner_module_progress')
+        .upsert(rowsToUpsert, { onConflict: 'learner_id,track_id,node_id' });
+
+      if (modulesError) {
+        console.warn('Supabase module progress sync warning:', modulesError.message);
       }
     }
 
@@ -332,11 +397,12 @@ export async function saveLearnerStateToSupabaseAndLocal({
  * Fetches the learner's saved paths & module workspaces from Supabase on app startup
  * or when Supabase credentials are connected.
  */
-export async function fetchLearnerStateFromSupabase(supabaseConfig = null) {
+export async function fetchLearnerStateFromSupabase(supabaseConfig = null, learnerIdOverride = null) {
   const supabase = getSupabaseClient(supabaseConfig);
   if (!supabase) return null;
 
-  const learnerId = getOrCreateLearnerId();
+  const learnerId = learnerIdOverride || activeClerkUserId || getOrCreateLearnerId();
+  if (!learnerId || learnerId === 'student-default') return null;
 
   try {
     const { data: profile, error: profileError } = await supabase
@@ -346,7 +412,9 @@ export async function fetchLearnerStateFromSupabase(supabaseConfig = null) {
       .maybeSingle();
 
     if (profileError) throw profileError;
-    if (!profile) return null;
+    if (!profile) {
+      return { exists: false, learnerId };
+    }
 
     const { data: moduleRows, error: modulesError } = await supabase
       .from('learner_module_progress')
@@ -368,11 +436,11 @@ export async function fetchLearnerStateFromSupabase(supabaseConfig = null) {
 
     const hydratedTracks = rehydrateTracksWithEvaluators(profile.tracks_snapshot);
 
-    // Also cache the freshly fetched Supabase state locally
+    // Cache locally under account key
     if (typeof window !== 'undefined') {
       try {
         window.localStorage.setItem(
-          LOCAL_STATE_KEY,
+          getLocalStorageKey(learnerId),
           JSON.stringify({
             learnerId,
             activeTrackId: profile.active_track_id || 'frontend',
@@ -388,6 +456,7 @@ export async function fetchLearnerStateFromSupabase(supabaseConfig = null) {
     }
 
     return {
+      exists: true,
       learnerId,
       activeTrackId: profile.active_track_id || 'frontend',
       activeNodeId: profile.active_node_id || 'html-semantic-structure',
