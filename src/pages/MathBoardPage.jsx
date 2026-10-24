@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, lazy, Suspense } from 'react';
+import React, { useMemo, useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { ArrowLeft, CheckCircle2, ChevronRight, ArrowRight } from 'lucide-react';
 import { UserButton } from '@clerk/clerk-react';
 import { Button } from '@/components/ui/button.jsx';
