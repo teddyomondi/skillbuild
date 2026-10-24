@@ -76,17 +76,3 @@ export default function ExcalidrawWhiteboard({
     </div>
   );
 }
-        UIOptions={{
-          canvasActions: {
-            changeViewBackgroundColor: true,
-            clearCanvas: true,
-            export: { saveFileToDisk: true },
-            loadScene: true,
-            saveToActiveFile: false,
-            toggleTheme: true,
-          },
-        }}
-      />
-    </div>
-  );
-}
