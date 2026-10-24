@@ -1266,15 +1266,6 @@ ${
                 >
                   <PanelBottom className="w-3.5 h-3.5" />
                 </Button>
-                <Button
-                  variant={showPreviewPane ? "secondary" : "ghost"}
-                  size="icon"
-                  onClick={() => setShowPreviewPane((v) => !v)}
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                  title="Toggle Preview"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                </Button>
               </>
             )}
             <Button
@@ -1590,37 +1581,6 @@ ${
                     />
                   ) : null}
                 </div>
-
-                {showPreviewPane && (
-                  <>
-                    <div
-                      onMouseDown={() => setDraggingSplitter('preview')}
-                      className="w-1 bg-border hover:bg-neutral-500 cursor-ew-resize transition-colors shrink-0 z-20"
-                    />
-                    <div
-                      style={{ width: `${previewWidth}px` }}
-                      className="bg-background flex flex-col shrink-0 min-w-[200px] max-w-[520px]"
-                    >
-                      <div className="h-8 px-3 border-b border-border bg-secondary/40 flex items-center justify-between text-[11px] font-medium text-muted-foreground">
-                        <span>Preview</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setShowPreviewPane(false)}
-                          className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                      <iframe
-                        title="Preview"
-                        srcDoc={livePreviewSrcDoc}
-                        className="flex-1 w-full bg-background"
-                        sandbox="allow-scripts"
-                      />
-                    </div>
-                  </>
-                )}
               </>
             )}
           </div>
