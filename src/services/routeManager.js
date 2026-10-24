@@ -29,8 +29,8 @@ export function buildSignUpRoute() {
   return '/sign-up';
 }
 
-export function buildOnboardingRoute() {
-  return '/onboarding';
+export function buildOnboardingRoute(step = 'resume') {
+  return `/onboarding/${step}`;
 }
 
 /**
@@ -63,10 +63,12 @@ export function parseAppRoute(pathname = '/') {
     };
   }
 
-  // 0b. Onboarding Route: /onboarding
+  // 0b. Onboarding Route: /onboarding, /onboarding/resume, /onboarding/curriculum, /onboarding/mismatch
   if (parts[0] === 'onboarding') {
+    const step = parts[1] || 'resume';
     return {
       view: 'onboarding',
+      onboardingStep: step,
       path: cleanPath
     };
   }

@@ -17,6 +17,7 @@ import {
 } from './services/routeManager.js';
 import AuthPage from './pages/AuthPage.jsx';
 import SubjectsPage from './pages/SubjectsPage.jsx';
+import OnboardingPage from './pages/OnboardingPage.jsx';
 
 const CoursesPage = lazy(() => import('./pages/CoursesPage.jsx'));
 const IdePage = lazy(() => import('./pages/IdePage.jsx'));
@@ -106,13 +107,11 @@ export default function App() {
     []
   );
 
-  const [currentView, setCurrentView] = useState(() =>
-    initialRoute.view === 'onboarding' ? 'lms' : initialRoute.view || 'lms'
+  const [currentView, setCurrentView] = useState(() => initialRoute.view || 'lms');
+  const [onboardingStep, setOnboardingStep] = useState(
+    () => initialRoute.onboardingStep || 'resume'
   );
   const [authMode, setAuthMode] = useState(() => initialRoute.authMode || 'sign-in');
-  const [showOnboardingModal, setShowOnboardingModal] = useState(
-    () => initialRoute.view === 'onboarding'
-  );
 
   // Curriculum & workspace state
   const [tracks, setTracks] = useState(() => ROADMAP_TRACKS);
@@ -269,7 +268,8 @@ export default function App() {
         return;
       }
       if (route.view === 'onboarding') {
-        setShowOnboardingModal(true);
+        setOnboardingStep(route.onboardingStep || 'resume');
+        setCurrentView('onboarding');
         return;
       }
       if (route.view === 'subjects') {
@@ -336,15 +336,28 @@ export default function App() {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('codepulse_kenya_onboarding_completed', 'true');
     }
-    setShowOnboardingModal(false);
     setTracks((prev) => [
       synthesizedTrack,
       ...prev.filter((t) => t.id !== synthesizedTrack.id)
     ]);
     setActiveTrackId(synthesizedTrack.id);
-    navigateToRoute('/subjects', { replace: true, title: 'Choose a subject' });
-    setCurrentView('subjects');
+    setActiveNodeId(synthesizedTrack.nodes[0]?.id || null);
+    navigateToRoute(buildCourseTrackRoute(synthesizedTrack.id), {
+      replace: true,
+      title: synthesizedTrack.title ? synthesizedTrack.title.split('(')[0].trim() : 'Custom Course'
+    });
+    setCurrentView('lms');
   }, []);
+
+  // ROUTE 0: Step-by-Step Adaptive Onboarding (`/onboarding`, `/onboarding/resume`, `/onboarding/curriculum`, `/onboarding/mismatch`)
+  if (currentView === 'onboarding') {
+    return (
+      <OnboardingPage
+        initialStep={onboardingStep}
+        onCompleteOnboarding={handleCompleteOnboarding}
+      />
+    );
+  }
 
   // ROUTE 1: Auth Page (`/sign-in`, `/sign-up`)
   if (currentView === 'auth') {

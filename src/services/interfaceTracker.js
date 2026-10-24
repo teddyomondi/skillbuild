@@ -192,19 +192,49 @@ export function formatInterfaceContextForPrompt(snapshot) {
 
   let boardSection = '';
   if (snapshot.boardData) {
-    const vectors = snapshot.boardData.vectors || [];
-    const elements = snapshot.boardData.elements || [];
-    const texts = snapshot.boardData.texts || [];
-    const vectorDetails = vectors.length > 0
-      ? vectors.map((v) => `${v.name || 'v'}: [(${v.start?.[0]}, ${v.start?.[1]}) -> (${v.end?.[0]}, ${v.end?.[1]}), dx=${v.dx}, dy=${v.dy}, mag=${v.magnitude}]`).join('; ')
-      : 'No student vectors drawn yet';
-    const textDetails = texts.length > 0 ? texts.join(' | ') : 'None';
+    const rawElements = Array.isArray(snapshot.boardData)
+      ? snapshot.boardData
+      : Array.isArray(snapshot.boardData.elements)
+      ? snapshot.boardData.elements
+      : [];
+    const activeElements = rawElements.filter((el) => !el.isDeleted);
+
+    // Extract arrows / vector rays
+    const explicitVectors = (snapshot.boardData.vectors || []).map(
+      (v) => `${v.name || 'v'}: [(${v.start?.[0]}, ${v.start?.[1]}) -> (${v.end?.[0]}, ${v.end?.[1]}), dx=${v.dx}, dy=${v.dy}, mag=${v.magnitude}]`
+    );
+    const excalidrawArrows = activeElements
+      .filter((el) => el.type === 'arrow' || el.type === 'line')
+      .map((el, i) => {
+        const lastPoint = el.points?.[el.points.length - 1] || [el.width || 0, el.height || 0];
+        const dx = Math.round(lastPoint[0]);
+        const dy = Math.round(lastPoint[1]);
+        const mag = Number(Math.hypot(dx, dy).toFixed(1));
+        return `Arrow #${i + 1} at (${Math.round(el.x)}, ${Math.round(el.y)}) -> dx=${dx}, dy=${dy}, mag=${mag}`;
+      });
+    const allVectors = [...explicitVectors, ...excalidrawArrows];
+
+    // Extract written text notes, equations & labels
+    const explicitTexts = snapshot.boardData.texts || [];
+    const excalidrawTexts = activeElements
+      .filter((el) => el.type === 'text' && el.text)
+      .map((el) => `"${el.text.trim()}"`);
+    const allTexts = [...explicitTexts, ...excalidrawTexts];
+
+    // Extract geometric figures
+    const shapes = activeElements
+      .filter((el) => ['rectangle', 'ellipse', 'diamond'].includes(el.type))
+      .map((el) => `${el.type} (${Math.round(el.width)}x${Math.round(el.height)})`);
+
+    const freehandCount = activeElements.filter((el) => el.type === 'freedraw').length;
 
     boardSection = `
 === DIGITAL MATH BOARD STATUS ===
-• Active Canvas Elements: ${elements.length}
-• Vectors On Board: ${vectorDetails}
-• Formulas / Text Notes: ${textDetails}
+• Active Canvas Items: ${activeElements.length || rawElements.length || 0}
+• Text / Formulas / Labels: ${allTexts.length > 0 ? allTexts.join(' | ') : 'None'}
+• Vectors & Arrows: ${allVectors.length > 0 ? allVectors.join('; ') : 'None'}
+• Geometric Shapes: ${shapes.length > 0 ? shapes.join(', ') : 'None'}
+• Freehand Sketches: ${freehandCount}
 `;
   }
 
