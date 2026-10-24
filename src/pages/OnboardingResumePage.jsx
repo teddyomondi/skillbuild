@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Upload, FileText, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { ModeToggle } from '@/components/mode-toggle.jsx';
 import Logo from '@/components/notion-marketing/Logo.jsx';
 import { UserButton } from '@clerk/clerk-react';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button.jsx';
 import { extractTextFromPdf } from '@/services/pdfParser.js';
 import { parseResumeWithAi, saveOnboardingData } from '@/services/adaptiveOnboardingEngine.js';
 
-export default function OnboardingResumePage({ onNext, initialData = {} }) {
+export default function OnboardingResumePage({ onNext, onSkip, onBack, initialData = {} }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [fileData, setFileData] = useState(() => initialData.resumeData || null);
@@ -74,7 +74,20 @@ export default function OnboardingResumePage({ onNext, initialData = {} }) {
     <div className="min-h-screen bg-background dark:bg-[#191919] text-foreground flex flex-col font-sans transition-colors duration-200">
       {/* Top Header */}
       <header className="w-full border-b border-border/60 bg-background/80 backdrop-blur-md sticky top-0 z-20 px-6 py-3.5 flex items-center justify-between">
-        <Logo />
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onBack}
+              className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Subjects</span>
+            </Button>
+          )}
+          <Logo />
+        </div>
         <div className="flex items-center gap-3">
           <span className="text-xs font-medium text-muted-foreground">Step 1 of 3</span>
           <ModeToggle />
@@ -140,6 +153,16 @@ export default function OnboardingResumePage({ onNext, initialData = {} }) {
 
           {error && (
             <p className="text-xs text-destructive mt-3 font-medium">{error}</p>
+          )}
+
+          {onSkip && !isProcessing && (
+            <button
+              type="button"
+              onClick={onSkip}
+              className="mt-4 text-xs text-muted-foreground hover:text-foreground transition underline underline-offset-4"
+            >
+              Skip and continue with standard course
+            </button>
           )}
 
           {fileData && !isProcessing && (

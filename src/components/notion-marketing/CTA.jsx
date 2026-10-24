@@ -46,10 +46,10 @@ export const CTA = ({ scrollContainerRef, onEnterWorkspace }) => {
       >
         <div className="relative z-10 max-w-2xl mx-auto space-y-6">
           <h2 className="text-3xl sm:text-5xl md:text-6xl font-normal tracking-tight text-white font-serif">
-            Ready to master coding interactively?
+            Don't just consume. Prove what you can do.
           </h2>
           <p className="text-neutral-400 text-base sm:text-lg md:text-xl font-normal max-w-lg mx-auto leading-relaxed">
-            Follow your course path, learn one step at a time, and practice in the interactive coding workspace.
+            Assess your skills, bridge the market gap, and master coding and maths through active, Socratic practice.
           </p>
           <div className="pt-2">
             {isLoaded && !isSignedIn && (
@@ -62,7 +62,7 @@ export const CTA = ({ scrollContainerRef, onEnterWorkspace }) => {
                   size="lg"
                   className="bg-white text-black hover:bg-neutral-200 transition-colors font-medium px-8 py-6 text-base rounded-md"
                 >
-                  Get Started Free <ArrowRight className="h-4 w-4 ml-2" />
+                  Start Practicing Free <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               </SignUpButton>
             )}
@@ -72,7 +72,7 @@ export const CTA = ({ scrollContainerRef, onEnterWorkspace }) => {
                 onClick={onEnterWorkspace}
                 className="bg-white text-black hover:bg-neutral-200 transition-colors font-medium px-8 py-6 text-base rounded-md"
               >
-                Open Courses <ArrowRight className="h-4 w-4 ml-2" />
+                Open Workspace <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             )}
           </div>

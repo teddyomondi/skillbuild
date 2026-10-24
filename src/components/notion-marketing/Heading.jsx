@@ -14,10 +14,10 @@ const Heading = ({ onEnterWorkspace }) => {
           "text-4xl sm:text-6xl md:text-6xl font-normal tracking-tight font-serif"
         )}
       >
-        Your Coding Mastery, Interactive
+        Stop watching. Start proving.
       </h1>
       <p className="text-base sm:text-xl md:text-2xl font-normal text-muted-foreground leading-relaxed">
-        Choose a learning track, explore interactive modules, and practice live with an AI Voice Tutor.
+        Videos create the illusion of understanding. Upskill turns learning into practice: code in a live IDE, solve maths on a digital board, and master market skills with an AI tutor.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
         {!isLoaded && (
@@ -32,13 +32,13 @@ const Heading = ({ onEnterWorkspace }) => {
             forceRedirectUrl="/subjects"
           >
             <Button size="lg" className="rounded-md">
-              Start Learning Free <ArrowRight className="h-4 w-4 ml-2" />
+              Start Practicing Free <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </SignUpButton>
         )}
         {isLoaded && isSignedIn && (
           <Button size="lg" className="rounded-md" onClick={onEnterWorkspace}>
-            Browse Courses &amp; Modules <ArrowRight className="h-4 w-4 ml-2" />
+            Open Workspace <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         )}
       </div>

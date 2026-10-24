@@ -8,6 +8,8 @@ import { loadSavedOnboardingData } from '@/services/adaptiveOnboardingEngine.js'
 export default function OnboardingPage({
   initialStep = 'resume',
   onCompleteOnboarding,
+  onSkipToCourse,
+  onBackToSubjects,
 }) {
   const [currentStep, setCurrentStep] = useState(() => initialStep || 'resume');
   const [onboardingData, setOnboardingData] = useState(() => loadSavedOnboardingData() || {});
@@ -60,6 +62,8 @@ export default function OnboardingPage({
     <OnboardingResumePage
       initialData={onboardingData}
       onNext={() => goToStep('curriculum')}
+      onSkip={onSkipToCourse}
+      onBack={onBackToSubjects}
     />
   );
 }

@@ -3,10 +3,10 @@ import { SignUpButton, useAuth } from "@clerk/clerk-react";
 import { ArrowRight, Check, Coins } from "lucide-react";
 
 const features = [
-  "Personalized course paths with clear lesson progress",
-  "Live Scrimba-style AI Voice & Cursor IDE walkthroughs",
-  "Adaptive detour modules generated automatically",
-  "Works out of the box or with your own OpenAI / Gemini / Claude key",
+  "Kenya-aligned curriculum for software engineering and mathematics",
+  "Live in-browser IDE for coding and digital board for maths",
+  "Socratic AI tutor that guides your thinking without spoiling answers",
+  "Diagnostic assessment mapping your skills against real market needs",
 ];
 
 export const Pricing = ({ onEnterWorkspace }) => {
@@ -20,15 +20,15 @@ export const Pricing = ({ onEnterWorkspace }) => {
       <div className="text-center space-y-3 mb-10">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-primary/5 text-primary border border-primary/10">
           <Coins className="h-3.5 w-3.5 text-primary" />
-          <span>Open Learning Platform</span>
+          <span>Curriculum &amp; Access</span>
         </div>
 
         <h2 className="text-3xl sm:text-5xl font-normal tracking-tight text-foreground font-serif">
-          3 Adaptive Tracks Included
+          Kenya-Aligned. Market-Ready.
         </h2>
 
         <p className="text-muted-foreground text-sm sm:text-base">
-          Frontend, Backend &amp; AI Engineering tracks with unlimited adaptive detours.
+          Coding tracks and mathematics curricula built to bridge local education with global market standards.
         </p>
       </div>
 
@@ -39,11 +39,11 @@ export const Pricing = ({ onEnterWorkspace }) => {
               Free
             </span>
             <span className="text-sm font-medium text-muted-foreground">
-              / unlimited labs
+              / all modules
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Includes guided courses and the interactive learning workspace
+            Complete access to live coding workspaces, digital maths boards, and AI tutoring
           </p>
         </div>
 

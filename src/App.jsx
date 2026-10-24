@@ -18,6 +18,7 @@ import {
 import AuthPage from './pages/AuthPage.jsx';
 import SubjectsPage from './pages/SubjectsPage.jsx';
 import OnboardingPage from './pages/OnboardingPage.jsx';
+import { saveOnboardingData } from './services/adaptiveOnboardingEngine.js';
 
 const CoursesPage = lazy(() => import('./pages/CoursesPage.jsx'));
 const IdePage = lazy(() => import('./pages/IdePage.jsx'));
@@ -307,14 +308,18 @@ export default function App() {
     setCurrentView('ide');
   }, []);
 
-  const handleSelectSubject = useCallback((trackId) => {
+  const handleSelectSubject = useCallback(async (trackId) => {
     const selectedTrack = tracks.find((track) => track.id === trackId) || tracks[0];
     setActiveTrackId(trackId);
-    setActiveNodeId(selectedTrack.nodes[0]?.id || null);
-    navigateToRoute(buildCourseTrackRoute(trackId), {
-      title: selectedTrack.title.split('(')[0].trim()
-    });
-    setCurrentView('lms');
+    setActiveNodeId(selectedTrack?.nodes?.[0]?.id || null);
+
+    // Save chosen subject as target domain for adaptive analysis
+    await saveOnboardingData({ targetDomain: trackId });
+
+    // Directly enter the step-by-step onboarding flow for the selected subject
+    navigateToRoute('/onboarding/resume', { title: 'Upload Resume' });
+    setOnboardingStep('resume');
+    setCurrentView('onboarding');
   }, [tracks]);
 
   const handleBackToCourses = useCallback(() => {
@@ -354,6 +359,14 @@ export default function App() {
       <OnboardingPage
         initialStep={onboardingStep}
         onCompleteOnboarding={handleCompleteOnboarding}
+        onSkipToCourse={() => {
+          const targetTrack = tracks.find((t) => t.id === activeTrackId) || tracks[0];
+          navigateToRoute(buildCourseTrackRoute(targetTrack.id), {
+            title: targetTrack.title.split('(')[0].trim()
+          });
+          setCurrentView('lms');
+        }}
+        onBackToSubjects={handleBackToSubjects}
       />
     );
   }

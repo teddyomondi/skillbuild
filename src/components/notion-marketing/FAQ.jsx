@@ -4,24 +4,24 @@ import { cn } from "@/lib/utils";
 
 const faqs = [
   {
-    question: "How do I move through a course?",
+    question: "Why practice instead of watching video tutorials?",
     answer:
-      "Choose a course to see its lessons in order. Complete each lesson to unlock the next one, and open an available lesson to learn and practice in the coding workspace.",
+      "Watching videos creates the illusion of understanding. By coding in a live IDE and solving problems on a digital board yourself, you uncover misconceptions instantly and build lasting competence.",
   },
   {
-    question: "How does the Scrimba-style AI walkthrough work?",
+    question: "How does the AI tutor help without spoiling answers?",
     answer:
-      "The instructor explains the code as it is added to the workspace. You can follow the example, ask the tutor about anything that is unclear, and then try the task yourself.",
+      "The tutor uses Socratic questioning. It reviews your code or whiteboard steps in real time, spots where your logic broke down, and asks targeted questions that guide you to solve it yourself.",
   },
   {
-    question: "What happens when I get stuck on a coding concept?",
+    question: "What subjects and workspaces are available?",
     answer:
-      "The tutor explains what the code does and why it is written that way. It points to the relevant line, gives you a useful next step, and asks one open question in the middle of the lesson. You can reply in the tutor chat and keep talking through the idea.",
+      "Upskill provides an in-browser IDE with live preview and terminal for Software Engineering, and an interactive digital whiteboard for visual and algebraic Mathematics.",
   },
   {
-    question: "Do I need an API key to use the AI Tutor?",
+    question: "How is the curriculum aligned with market needs?",
     answer:
-      "The tutor uses a provider key configured by the platform. Learners do not need to enter API keys in the course workspace.",
+      "Our learning paths combine Kenya-aligned educational requirements with the exact technologies, problem-solving skills, and competencies modern employers demand.",
   },
 ];
 
@@ -43,7 +43,7 @@ export const FAQ = () => {
             Questions people ask
           </h2>
           <p className="text-muted-foreground text-base sm:text-lg leading-relaxed max-w-md">
-            Learn how course progress, guided lessons, and the AI tutor work together.
+            How active practice, market alignment, and our Socratic AI tutor turn study into real-world mastery.
           </p>
         </div>
 

@@ -53,7 +53,7 @@ const Footer = ({ onEnterWorkspace }) => {
         <div className="flex flex-col items-start gap-y-6 max-w-sm">
           <Logo onClick={onEnterWorkspace} />
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Upskill guides learners through structured lessons with an interactive AI tutor.
+            Turn learning into practice. Active coding in a live IDE, mathematics on a digital board, and Socratic AI guidance aligned to market needs.
           </p>
           <div className="flex items-center gap-3 pt-2">
             {isLoaded && !isSignedIn ? (
@@ -62,11 +62,11 @@ const Footer = ({ onEnterWorkspace }) => {
                 fallbackRedirectUrl="/subjects"
                 forceRedirectUrl="/subjects"
               >
-                <Button size="sm">Get Started Free</Button>
+                <Button size="sm">Start Practicing Free</Button>
               </SignUpButton>
             ) : (
               <Button size="sm" onClick={onEnterWorkspace}>
-                Browse Courses &amp; Modules
+                Open Workspace
               </Button>
             )}
           </div>

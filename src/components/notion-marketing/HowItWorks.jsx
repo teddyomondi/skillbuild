@@ -18,97 +18,97 @@ import { cn } from "@/lib/utils";
 const stepsData = [
   {
     step: "01",
-    badge: "Guided Course Paths",
-    title: "Follow the lessons in order",
+    badge: "Skill & Market Diagnosis",
+    title: "Assess your gap. Skip what you know.",
     description:
-      "Choose a course and follow its visual lesson path. Each lesson builds on the one before it, so you can see where you are and what comes next.",
+      "We assess your existing knowledge against what the market demands, creating a personalized roadmap aligned with Kenya's curriculum and industry standards.",
     points: [
-      "See completed, current, and locked lessons at a glance",
-      "Unlock the next lesson as you make progress",
-      "Open a lesson in the interactive coding workspace",
+      "Instant diagnostic identifies your true skill baseline",
+      "Maps the gap between your current knowledge and market needs",
+      "Eliminates wasted time on topics you have already mastered",
     ],
     icon: Layers,
     preview: {
-      header: "Frontend & Backend Curriculum Tree",
-      subHeader: "Roadmap.sh Verified Learning Paths",
+      header: "Skill Gap Diagnostic",
+      subHeader: "Kenya-Aligned Market Baseline",
       items: [
-        "1. Semantic HTML & Page Structure (Interactive Lab)",
-        "2. HTML Lists & Hyperlinks (<ul>, <li>, <a>)",
-        "3. Lexical Scope & Closures (State Encapsulation)",
+        "Verified: Core fundamentals & logic",
+        "Identified Gap: Practical full-stack architecture & APIs",
+        "Targeted Path: Synthesized personalized learning tree",
       ],
-      tag: "Live Workspace",
+      tag: "Targeted Path",
       tagVariant: "emerald",
     },
   },
   {
     step: "02",
-    badge: "Live AI Walkthrough",
-    title: "Scrimba-Style Live Typing & Voice Narration",
+    badge: "Active Environments",
+    title: "Code in an IDE. Solve maths on a digital board.",
     description:
-      "Instead of passive videos, watch the AI Instructor type code directly inside your Monaco editor with a multiplayer screen cursor and synchronized 40px subtitles.",
+      "No passive videos. In coding, you build directly in a live browser IDE. In maths, you sketch formulas, geometry, and graphs on an interactive digital board.",
     points: [
-      "Hardware-accelerated multiplayer AI cursor glides to exact lines",
-      "Ask a question and continue from the point you paused",
-      "Try the code yourself in the interactive workspace",
+      "Coding: Real in-browser Monaco IDE with live preview and terminal",
+      "Mathematics: Visual board for equations, vectors, and proofs",
+      "Immediate execution and visual feedback on every step",
     ],
     icon: Brain,
     preview: {
-      header: "Live Pair-Programming Session",
-      subHeader: "Mode: AI_STREAMING → STUDENT_CHALLENGE",
+      header: "Dual Active Workspaces",
+      subHeader: "Zero Passive Video Watching",
       items: [
-        "AI Cursor pointing at Line 17: withdraw(amount) handoff",
-        "Synchronized neural voiceover + single-line subtitles",
-        "Instant in-browser Node.js & HTML preview execution",
+        "Code IDE: In-browser Node.js & HTML preview runtime",
+        "Maths Canvas: Geometric shapes, coordinate axes & formulas",
+        "Interactive challenge handoff with real-time feedback",
       ],
-      tag: "Real-Time Telemetry",
+      tag: "Active Practice",
       tagVariant: "blue",
     },
   },
   {
     step: "03",
-    badge: "Socratic AI Evaluation",
-    title: "A tutor that explains and listens",
+    badge: "Socratic AI Tutor",
+    title: "Reason through mistakes without spoilers.",
     description:
-      "The tutor explains what the code does and why it works. During the lesson, it pauses once to ask what you think, then responds to your answer in the conversation.",
+      "The AI tutor inspects your code and math board in real time. It catches misconceptions and asks targeted questions that guide you to the answer yourself.",
     points: [
-      "Uses Acorn JS AST & HTML DOM parsing alongside live LLM reasoning",
-      "Asks one open-ended question in the middle of the lesson",
-      "Voice microphone input lets you talk naturally to your AI mentor",
+      "Inspects both written code and board sketches in real time",
+      "Guides your reasoning with hints instead of giving away answers",
+      "Builds genuine problem-solving intuition and confidence",
     ],
     icon: FileCheck2,
     preview: {
-      header: "Your AI Tutor",
-      subHeader: "Clear explanations and conversation",
+      header: "Socratic Reasoning Engine",
+      subHeader: "Context-Aware AI Guidance",
       items: [
-        "AST Analysis: Checked function parameters & return statement",
-        "Paused mid-lesson for a learner reflection",
-        "Pointed AI cursor directly to the line needing attention",
+        "Code check: 'Check your loop termination condition on line 14'",
+        "Board check: 'What happens to the hypotenuse when vector X doubles?'",
+        "Learner outcome: Error resolved through guided reasoning",
       ],
-      tag: "Adaptive AI",
+      tag: "Socratic AI",
       tagVariant: "amber",
     },
   },
   {
     step: "04",
-    badge: "Adaptive Detour Engine",
-    title: "Personalized Next Modules Built on the Fly",
+    badge: "Proof of Competency",
+    title: "Advance only when you prove it.",
     description:
-      "Whenever you struggle with a concept like closures, return values, or semantic tags, Upskill injects a tailored practice module as your very next step.",
+      "Students don't just consume content; they prove what they can do. You move forward only when your code passes tests and your math reasoning is sound.",
     points: [
-      "Dynamically injects custom modules into your learning path",
-      "Adds practice lessons to your learning path when extra practice helps",
-      "Tracks completion progress across all tracks and custom detours",
+      "Next modules unlock only after verified competency",
+      "Dynamic practice injected whenever you hit a conceptual wall",
+      "Graduate with a verifiable portfolio of working solutions",
     ],
     icon: TrendingUp,
     preview: {
-      header: "Adaptive Learning Path Engine",
-      subHeader: "Custom Detour Injected Automatically",
+      header: "Competency Verification Engine",
+      subHeader: "Proof of Work Progression",
       items: [
-        "Completed: Semantic HTML & Page Structure",
-        "Tailored Next Module: JavaScript Functions Step-by-Step",
-        "Unlocked: Async JS, Promises & Microtask Queue",
+        "Automated evaluation: All test cases green",
+        "Concept verification: Ready for next milestone",
+        "Unlocked: Next Kenya-aligned market module",
       ],
-      tag: "100% Personalized",
+      tag: "Verified Skills",
       tagVariant: "purple",
     },
   },
@@ -207,7 +207,7 @@ export const HowItWorks = ({ scrollContainerRef, onEnterWorkspace }) => {
               <span>How Upskill Works</span>
             </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-normal tracking-tight text-white font-serif">
-              From concept to mastery in 4 interactive steps
+              Turn learning into practice in 4 steps
             </h2>
           </div>
 
@@ -314,11 +314,11 @@ export const HowItWorks = ({ scrollContainerRef, onEnterWorkspace }) => {
               <div className="pt-4 border-t border-neutral-800 flex items-center justify-between text-xs text-neutral-400">
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                  <span>AST &amp; WebContainer verified execution</span>
+                  <span>Real-time code &amp; board telemetry</span>
                 </div>
                 <div className="flex items-center gap-1 text-neutral-300 font-medium">
                   <Coins className="h-3.5 w-3.5 text-amber-400" />
-                  <span>100% Interactive</span>
+                  <span>100% Practice</span>
                 </div>
               </div>
             </div>
