@@ -149,8 +149,10 @@ export default function IdePage({
       setActiveMainWorkspaceTab('board');
       setShowPreviewPane(false);
       setShowTerminalPane(false);
+      setShowTutorPane(false);
     } else {
       setActiveMainWorkspaceTab('code');
+      setShowTutorPane(true);
     }
   }, [activeNode?.id, activeNode?.isMathBoard, activeTrack?.id]);
 
@@ -1499,15 +1501,11 @@ ${
 
           <div className="flex-1 flex min-h-0">
             {activeMainWorkspaceTab === 'board' ? (
-              <div className="flex-1 min-w-0 min-h-0 relative">
+              <div className="flex-1 min-w-0 min-h-0 relative h-full w-full">
                 <AppErrorBoundary>
-                  <DrawnixDigitalBoard
-                    activeNode={activeNode}
+                  <ExcalidrawWhiteboard
                     initialElements={activeNode.initialBoard?.elements || []}
-                    challengeSpec={activeNode.challengeSpec}
                     onBoardChange={setMathBoardData}
-                    onVerify={() => handleVerifyWithTutor(null)}
-                    isVerifying={isEvaluating}
                   />
                 </AppErrorBoundary>
               </div>
