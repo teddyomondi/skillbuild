@@ -3,7 +3,6 @@
 // 2. Uses `strip-ansi` to clean ANSI terminal escape sequences
 // 3. Includes an instant zero-latency JS Sandbox Runner so code execution (`node index.js`) works immediately and captures clean stdout/stderr for the AI Tutor.
 
-import { WebContainer } from '@webcontainer/api';
 import stripAnsi from 'strip-ansi';
 
 let webcontainerInstance = null;
@@ -21,6 +20,7 @@ export async function getOrBootWebContainer(onStatus) {
   bootPromise = (async () => {
     try {
       onStatus?.('Booting WebContainer (In-Browser Node.js)...');
+      const { WebContainer } = await import('@webcontainer/api');
       webcontainerInstance = await WebContainer.boot();
       onStatus?.('WebContainer Ready (Node.js Wasm Active)');
       return webcontainerInstance;

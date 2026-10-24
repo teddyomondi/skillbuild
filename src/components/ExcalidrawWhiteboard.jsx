@@ -49,7 +49,7 @@ export default function ExcalidrawWhiteboard({
   }
 
   return (
-    <div className="relative h-full w-full min-h-[400px] overflow-hidden">
+    <div className="relative h-full w-full min-h-[400px] overflow-hidden" style={{ height: 'calc(100vh - 48px)' }}>
       <ExcalidrawComp
         initialData={{
           elements: initialElements || [],
@@ -61,16 +61,6 @@ export default function ExcalidrawWhiteboard({
         }}
         onChange={(elements, appState) => {
           onBoardChange?.({ elements, appState });
-        }}
-        UIOptions={{
-          canvasActions: {
-            changeViewBackgroundColor: true,
-            clearCanvas: true,
-            export: { saveFileToDisk: true },
-            loadScene: true,
-            saveToActiveFile: false,
-            toggleTheme: true,
-          },
         }}
       />
     </div>

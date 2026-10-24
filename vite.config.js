@@ -42,6 +42,7 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       'process.env.IS_PREACT': JSON.stringify('true'),
+      'process.env': {},
     },
     server: {
       port: 5173,
@@ -55,6 +56,33 @@ export default defineConfig(({ mode }) => {
       headers: {
         'Cross-Origin-Embedder-Policy': 'credentialless',
         'Cross-Origin-Opener-Policy': 'same-origin',
+      },
+    },
+    build: {
+      target: 'esnext',
+      chunkSizeWarningLimit: 1200,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('monaco-editor') || id.includes('@monaco-editor')) {
+                return 'vendor-monaco';
+              }
+              if (id.includes('@excalidraw')) {
+                return 'vendor-excalidraw';
+              }
+              if (id.includes('@xterm') || id.includes('@webcontainer')) {
+                return 'vendor-runtime-engine';
+              }
+              if (id.includes('@clerk')) {
+                return 'vendor-clerk';
+              }
+              if (id.includes('katex') || id.includes('cytoscape')) {
+                return 'vendor-visuals';
+              }
+            }
+          },
+        },
       },
     },
   };
