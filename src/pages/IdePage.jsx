@@ -148,7 +148,6 @@ export default function IdePage({
 
   // Clean Student Workspace Panel Visibility
   const [showLeftSidebar, setShowLeftSidebar] = useState(false);
-  const [showPreviewPane, setShowPreviewPane] = useState(false);
   const [showTerminalPane, setShowTerminalPane] = useState(
     () =>
       activeNode.challengeSpec?.targetFile !== 'index.html' &&
@@ -158,7 +157,6 @@ export default function IdePage({
 
   // Resizable Panel Dimensions
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(220);
-  const [previewWidth, setPreviewWidth] = useState(360);
   const [tutorWidth, setTutorWidth] = useState(350);
   const [terminalHeight, setTerminalHeight] = useState(145);
   const [draggingSplitter, setDraggingSplitter] = useState(null);
@@ -166,7 +164,6 @@ export default function IdePage({
   useEffect(() => {
     if (activeNode?.isMathBoard || activeTrack?.id === 'mathematics') {
       setActiveMainWorkspaceTab('board');
-      setShowPreviewPane(false);
       setShowTerminalPane(false);
       setShowTutorPane(false);
     } else {
@@ -346,7 +343,7 @@ export default function IdePage({
         terminalLines,
         panels: {
           leftSidebar: showLeftSidebar,
-          preview: showPreviewPane,
+          preview: activeMainWorkspaceTab === 'preview',
           terminal: showTerminalPane,
           tutor: showTutorPane,
         },
@@ -367,7 +364,7 @@ export default function IdePage({
       lastRuntimeOutput,
       terminalLines,
       showLeftSidebar,
-      showPreviewPane,
+      activeMainWorkspaceTab,
       showTerminalPane,
       showTutorPane,
       interfaceEvents,
@@ -441,9 +438,6 @@ export default function IdePage({
         setLeftSidebarWidth(Math.max(170, Math.min(420, e.clientX)));
       } else if (draggingSplitter === 'tutor') {
         setTutorWidth(Math.max(260, Math.min(560, window.innerWidth - e.clientX)));
-      } else if (draggingSplitter === 'preview') {
-        const rightOffset = showTutorPane ? tutorWidth : 0;
-        setPreviewWidth(Math.max(200, Math.min(520, window.innerWidth - rightOffset - e.clientX)));
       } else if (draggingSplitter === 'terminal') {
         setTerminalHeight(Math.max(80, Math.min(420, window.innerHeight - e.clientY)));
       }
@@ -756,18 +750,15 @@ export default function IdePage({
       setActiveFile(firstFile);
       const isMath = Boolean(node.isMathBoard || targetTrackId === 'mathematics');
       if (isMath) {
-        setShowPreviewPane(false);
         setShowTerminalPane(false);
         setActiveMainWorkspaceTab('board');
       } else {
-        setShowPreviewPane(isHtmlPrimary);
         setShowTerminalPane(!isHtmlPrimary);
-        setActiveMainWorkspaceTab('code');
+        setActiveMainWorkspaceTab(isHtmlPrimary ? 'preview' : 'code');
       }
       setTimelineStepIndex(0);
       setHighlightedLine(1);
       setAttemptCount(savedForNode?.attemptCount || 0);
-      setShowChallengeBanner(true);
       const rawSavedMsgs = savedForNode?.tutorMessages || [];
       setTutorMessages(
         rawSavedMsgs.filter((m) => m.type !== 'narration' && m.type !== 'concept-question')
@@ -880,7 +871,7 @@ export default function IdePage({
       activeNode.challengeSpec?.targetFile === 'index.html' || !files['index.js'];
 
     if (isHtmlLesson) {
-      if (!showPreviewPane) setShowPreviewPane(true);
+      setActiveMainWorkspaceTab('preview');
       const htmlContent = files['index.html'] || '';
       const plainSummary = htmlContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
       const summaryOut = `HTML Preview Rendered: ${plainSummary.slice(0, 120)}`;
@@ -1357,6 +1348,30 @@ ${
 
         {/* 2. CENTER CODE EDITOR / DIGITAL BOARD + CONSOLE */}
         <main className="flex-1 flex flex-col min-w-[240px] bg-background dark:bg-[#18181b]">
+          {showChallengeBanner && (
+            <div
+              data-ai-target="challenge-banner"
+              className="bg-secondary/30 border-b border-border px-4 py-2 flex items-center justify-between gap-3"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-foreground text-[11px] font-semibold shrink-0">
+                  Your Goal
+                </span>
+                <p className="text-xs text-foreground/90 truncate">
+                  {activeNode.challengeSpec?.prompt || activeNode.description}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowChallengeBanner(false)}
+                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground shrink-0"
+              >
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          )}
+
           <div className="h-9 bg-secondary/50 border-b border-border flex items-center justify-between px-2 shrink-0 overflow-x-auto">
             <div className="flex items-center h-full gap-0.5">
               {(isMathLesson || activeMainWorkspaceTab === 'board') && (
@@ -1452,15 +1467,6 @@ ${
                   <Sparkles className="w-3 h-3 text-amber-500" />
                   Explain Highlighted Code
                 </Button>
-              )}
-
-              {!showChallengeBanner && (
-                <button
-                  onClick={() => setShowChallengeBanner(true)}
-                  className="text-[11px] text-muted-foreground hover:text-foreground px-2"
-                >
-                  Show Goal
-                </button>
               )}
             </div>
           </div>
