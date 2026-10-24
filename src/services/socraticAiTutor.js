@@ -718,29 +718,42 @@ export function cleanTextForSpeech(subtitleText = '') {
 
   let s = subtitleText;
 
-  // Pronounce HTML tags clearly
-  s = s.replace(/<\/([a-zA-Z0-9]+)>/g, 'closing $1 tag');
-  s = s.replace(/<([a-zA-Z0-9]+)>(\s+tag)?/gi, '$1 tag');
+  // 1. Remove ellipsis, stray dots, trailing slashes, and placeholder symbols
+  s = s.replace(/\.{2,}/g, '');
+  s = s.replace(/<!--[\s\S]*?-->/g, ''); // HTML comments
+  s = s.replace(/\/\*[\s\S]*?\*\//g, ''); // CSS/JS block comments
+  s = s.replace(/\/\/[^\n]*/g, ''); // line comments
+  s = s.replace(/[\\|~^_{}[\]]/g, ' ');
 
-  // Common programming operators and tokens
+  // 2. Teach HTML tags naturally instead of reading angle brackets or closing slashes
+  s = s.replace(/<\/([a-zA-Z0-9]+)>/g, 'closing $1 tag');
+  s = s.replace(/<([a-zA-Z0-9]+)(?:\s+[^>]*)?>/g, '$1 tag');
+
+  // 3. Natural teaching speech for common code constructs
   s = s.replace(/===/g, ' strictly equals ');
-  s = s.replace(/!==/g, ' strictly does not equal ');
+  s = s.replace(/!==/g, ' does not strictly equal ');
   s = s.replace(/==/g, ' equals ');
   s = s.replace(/!=/g, ' does not equal ');
-  s = s.replace(/=>/g, ' arrow ');
-  s = s.replace(/\+\+/g, ' plus plus ');
-  s = s.replace(/--/g, ' minus minus ');
+  s = s.replace(/=>/g, ' arrow function ');
+  s = s.replace(/\+\+/g, ' increment ');
+  s = s.replace(/--/g, ' decrement ');
   s = s.replace(/&&/g, ' and ');
   s = s.replace(/\|\|/g, ' or ');
 
-  // Headings h1..h6
-  s = s.replace(/\b(h[1-6])\b/gi, (m) => `H ${m[1]}`);
+  // 4. Clean function calls: e.g. calculateTotal(price, tax) -> calculateTotal with price and tax
+  s = s.replace(/([a-zA-Z0-9_$]+)\(\s*\)/g, '$1');
+  s = s.replace(/([a-zA-Z0-9_$]+)\(([^)]+)\)/g, (match, fn, args) => {
+    const cleanArgs = args.replace(/,/g, ' and ');
+    return `${fn} with ${cleanArgs}`;
+  });
 
-  // Clean empty parentheses in function calls like getBalance() -> getBalance
-  s = s.replace(/([a-zA-Z0-9_$]+)\(\)/g, '$1');
+  // 5. Clean headings and attributes
+  s = s.replace(/\b(h[1-6])\b/gi, (m) => `heading ${m[1]}`);
+  s = s.replace(/class=["'][^"']*["']/gi, '');
+  s = s.replace(/href=["'][^"']*["']/gi, '');
 
-  // Clean remaining angle brackets or odd symbols
-  s = s.replace(/[<>]/g, '');
+  // 6. Strip any leftover technical punctuation that confuses TTS
+  s = s.replace(/[<>;:=#*+]/g, ' ');
 
   // Normalize spaces
   s = s.replace(/\s+/g, ' ').trim();
@@ -1211,9 +1224,13 @@ export async function speakNarration(
   }
 
   // --------------------------------------------------------------------------
-  // Mode 2: OpenAI Neural TTS API (/v1/audio/speech) with frame-accurate sync
+  // Mode 2: Neural Server TTS API (ElevenLabs / OpenAI TTS) with frame-accurate sync
   // --------------------------------------------------------------------------
-  if (import.meta.env?.VITE_TTS_ENGINE === 'openai-tts') {
+  if (
+    import.meta.env?.VITE_TTS_ENGINE === 'elevenlabs' ||
+    import.meta.env?.VITE_TTS_ENGINE === 'openai-tts' ||
+    Boolean(import.meta.env?.VITE_ELEVENLABS_API_KEY)
+  ) {
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',

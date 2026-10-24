@@ -158,22 +158,15 @@ export default function IdePage({
 
   // Clean Student Workspace Panel Visibility
   const [showLeftSidebar, setShowLeftSidebar] = useState(false);
-  const [showPreviewPane, setShowPreviewPane] = useState(
-    () =>
-      activeNode.challengeSpec?.targetFile === 'index.html' ||
-      !activeNode.initialFiles['index.js']
-  );
   const [showTerminalPane, setShowTerminalPane] = useState(
     () =>
       activeNode.challengeSpec?.targetFile !== 'index.html' &&
       Boolean(activeNode.initialFiles['index.js'])
   );
   const [showTutorPane, setShowTutorPane] = useState(true);
-  const [showChallengeBanner, setShowChallengeBanner] = useState(true);
 
   // Resizable Panel Dimensions
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(220);
-  const [previewWidth, setPreviewWidth] = useState(320);
   const [tutorWidth, setTutorWidth] = useState(350);
   const [terminalHeight, setTerminalHeight] = useState(145);
   const [draggingSplitter, setDraggingSplitter] = useState(null);
@@ -409,6 +402,8 @@ export default function IdePage({
     window.addEventListener('mousemove', handleGlobalMouseMoveForSubtitle, { passive: true });
 
     return () => {
+      lessonSessionIdRef.current += 1;
+      clearInterval(typingTimerRef.current);
       unsubscribeSpeak();
       window.removeEventListener('mousemove', handleGlobalMouseMoveForSubtitle);
       stopNarration();
@@ -1367,30 +1362,6 @@ ${
 
         {/* 2. CENTER CODE EDITOR / DIGITAL BOARD + CONSOLE */}
         <main className="flex-1 flex flex-col min-w-[240px] bg-background dark:bg-[#18181b]">
-          {showChallengeBanner && (
-            <div
-              data-ai-target="challenge-banner"
-              className="bg-secondary/30 border-b border-border px-4 py-2 flex items-center justify-between gap-3"
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className="px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-foreground text-[11px] font-semibold shrink-0">
-                  Your Goal
-                </span>
-                <p className="text-xs text-foreground/90 truncate">
-                  {activeNode.challengeSpec?.prompt || activeNode.description}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowChallengeBanner(false)}
-                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground shrink-0"
-              >
-                <X className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          )}
-
           <div className="h-9 bg-secondary/50 border-b border-border flex items-center justify-between px-2 shrink-0 overflow-x-auto">
             <div className="flex items-center h-full gap-0.5">
               {(isMathLesson || activeMainWorkspaceTab === 'board') && (

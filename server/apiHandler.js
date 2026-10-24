@@ -217,6 +217,54 @@ export async function handleApi(request, response, pathname) {
     }
 
     if (pathname === '/api/tts') {
+      const elevenKey = (
+        process.env.ELEVENLABS_API_KEY ||
+        process.env.VITE_ELEVENLABS_API_KEY ||
+        ''
+      ).trim();
+
+      const input = typeof body.input === 'string' ? body.input.slice(0, 4000) : '';
+      if (!input) {
+        sendJsonResponse(response, 400, { error: 'Speech text is required.' });
+        return;
+      }
+
+      // If ElevenLabs is configured, use its ultra-realistic voice
+      if (elevenKey) {
+        const voiceId = body.voiceId || process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM'; // Rachel / Adam
+        try {
+          const elevenRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+            method: 'POST',
+            headers: {
+              'xi-api-key': elevenKey,
+              'Content-Type': 'application/json',
+              'Accept': 'audio/mpeg'
+            },
+            body: JSON.stringify({
+              text: input,
+              model_id: 'eleven_turbo_v2_5',
+              voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75
+              }
+            }),
+            signal: AbortSignal.timeout(45000)
+          });
+
+          if (elevenRes.ok) {
+            response.writeHead(200, {
+              'Content-Type': 'audio/mpeg',
+              'Cache-Control': 'no-store',
+              'X-Content-Type-Options': 'nosniff'
+            });
+            response.end(Buffer.from(await elevenRes.arrayBuffer()));
+            return;
+          }
+        } catch (err) {
+          console.warn('[TTS] ElevenLabs request failed, falling back to OpenAI:', err.message);
+        }
+      }
+
       const apiKey = (
         process.env.OPENAI_API_KEY ||
         process.env.LLM_API_KEY ||
@@ -226,14 +274,8 @@ export async function handleApi(request, response, pathname) {
 
       if (!apiKey) {
         sendJsonResponse(response, 503, {
-          error: 'Set OPENAI_API_KEY or LLM_API_KEY on the server to use OpenAI voice.'
+          error: 'Set ELEVENLABS_API_KEY or OPENAI_API_KEY on the server to use high quality voice.'
         });
-        return;
-      }
-
-      const input = typeof body.input === 'string' ? body.input.slice(0, 4000) : '';
-      if (!input) {
-        sendJsonResponse(response, 400, { error: 'Speech text is required.' });
         return;
       }
 
