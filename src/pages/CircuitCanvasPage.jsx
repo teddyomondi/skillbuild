@@ -23,6 +23,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
+import { Input } from '@/components/ui/input.jsx';
 import Spinner from '@/components/ui/spinner.jsx';
 import { UserButton } from '@clerk/clerk-react';
 import { cn } from '@/lib/utils.js';
@@ -458,19 +459,19 @@ export default function CircuitCanvasPage({
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-neutral-950 text-neutral-100 overflow-hidden font-sans relative">
+    <div className="h-screen w-screen flex flex-col bg-background dark:bg-[#191919] text-foreground overflow-hidden font-sans relative transition-colors duration-200">
       <Toaster position="bottom-center" />
       <AiScreenCursor cursorState={aiCursor} isAiSpeaking={isAiSpeaking} interactionMode={interactionMode} />
 
       {/* Top Header */}
       {showTopBar && (
-        <header className="h-12 bg-neutral-900 border-b border-neutral-800 px-3.5 flex items-center justify-between gap-3 shrink-0 z-30">
+        <header className="h-12 bg-background dark:bg-[#1F1F1F] border-b border-border px-3.5 flex items-center justify-between gap-3 shrink-0 z-30">
           <div className="flex items-center gap-2 min-w-0">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setShowTopBar(false)}
-              className="h-8 w-8 text-neutral-400 hover:text-white shrink-0"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
               title="Hide top bar"
             >
               <ChevronUp className="w-4 h-4" />
@@ -480,19 +481,19 @@ export default function CircuitCanvasPage({
               variant="outline"
               size="sm"
               onClick={onBackToCourses}
-              className="h-8 gap-1.5 px-2.5 text-xs font-medium border-neutral-700 hover:bg-neutral-800 text-neutral-200 shrink-0"
+              className="h-8 gap-1.5 px-2.5 text-xs font-medium border-border hover:bg-secondary text-foreground shrink-0"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Courses
+              <ArrowLeft className="w-3.5 h-3.5 text-muted-foreground" />
+              <span>Courses</span>
             </Button>
 
-            <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-neutral-800/80 border border-neutral-700/60 text-xs min-w-0">
-              <Cpu className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-              <span className="text-white font-semibold shrink-0">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-secondary/50 border border-border text-xs min-w-0">
+              <Cpu className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+              <span className="text-foreground font-semibold shrink-0">
                 Lab {currentModuleIndex + 1} of {activeTrack.nodes.length}
               </span>
-              <span className="text-neutral-500">•</span>
-              <span className="text-neutral-300 font-medium truncate max-w-[280px]">
+              <span className="text-muted-foreground">•</span>
+              <span className="text-muted-foreground font-medium truncate max-w-[280px]">
                 {activeNode.title.replace(/^\d+\.\s*/, '')}
               </span>
             </div>
@@ -500,22 +501,22 @@ export default function CircuitCanvasPage({
 
           <div className="flex items-center gap-2 shrink-0">
             {/* View Mode Switcher */}
-            <div className="hidden sm:flex bg-neutral-800 p-0.5 rounded-lg text-xs">
+            <div className="hidden sm:flex bg-secondary p-0.5 rounded-lg border border-border text-xs">
               <button
                 onClick={() => setActiveMainTab('split')}
-                className={cn("px-2.5 py-1 rounded-md font-medium transition text-[11px]", activeMainTab === 'split' ? "bg-neutral-700 text-white" : "text-neutral-400 hover:text-neutral-200")}
+                className={cn("px-2.5 py-1 rounded-md font-medium transition text-[11px]", activeMainTab === 'split' ? "bg-background dark:bg-[#18181b] text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground")}
               >
                 Split View
               </button>
               <button
                 onClick={() => setActiveMainTab('circuit')}
-                className={cn("px-2.5 py-1 rounded-md font-medium transition text-[11px]", activeMainTab === 'circuit' ? "bg-neutral-700 text-white" : "text-neutral-400 hover:text-neutral-200")}
+                className={cn("px-2.5 py-1 rounded-md font-medium transition text-[11px]", activeMainTab === 'circuit' ? "bg-background dark:bg-[#18181b] text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground")}
               >
                 Circuit Only
               </button>
               <button
                 onClick={() => setActiveMainTab('code')}
-                className={cn("px-2.5 py-1 rounded-md font-medium transition text-[11px]", activeMainTab === 'code' ? "bg-neutral-700 text-white" : "text-neutral-400 hover:text-neutral-200")}
+                className={cn("px-2.5 py-1 rounded-md font-medium transition text-[11px]", activeMainTab === 'code' ? "bg-background dark:bg-[#18181b] text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground")}
               >
                 Code Only
               </button>
@@ -561,9 +562,9 @@ export default function CircuitCanvasPage({
             variant="secondary"
             size="sm"
             onClick={() => setShowTopBar(true)}
-            className="h-8 px-2.5 gap-1.5 text-xs font-medium shadow-md border border-neutral-700 bg-neutral-900/90 backdrop-blur-md text-white"
+            className="h-8 px-2.5 gap-1.5 text-xs font-medium shadow-md border border-border bg-card/90 backdrop-blur-md text-foreground"
           >
-            <ChevronDown className="w-4 h-4 text-emerald-400" />
+            <ChevronDown className="w-4 h-4 text-emerald-500" />
             <span>Menu</span>
           </Button>
         </div>
@@ -577,7 +578,7 @@ export default function CircuitCanvasPage({
           <div className="flex-1 w-full flex min-h-0 overflow-hidden">
             {/* 1. Circuit Canvas / Wokwi Simulator */}
             {(activeMainTab === 'circuit' || activeMainTab === 'split') && (
-              <div className={cn("h-full min-h-0 border-r border-neutral-800", activeMainTab === 'split' ? "w-1/2" : "w-full")}>
+              <div className={cn("h-full min-h-0 border-r border-border", activeMainTab === 'split' ? "w-1/2" : "w-full")}>
                 <WokwiCircuitCanvas
                   microcontroller={activeNode.microcontroller || 'arduino-uno'}
                   firmwareCode={firmwareCode}
@@ -594,19 +595,19 @@ export default function CircuitCanvasPage({
             {(activeMainTab === 'code' || activeMainTab === 'split') && (
               <div
                 ref={editorContainerRef}
-                className={cn("h-full flex flex-col min-h-0 bg-neutral-950", activeMainTab === 'split' ? "w-1/2" : "w-full")}
+                className={cn("h-full flex flex-col min-h-0 bg-background dark:bg-[#18181b]", activeMainTab === 'split' ? "w-1/2" : "w-full")}
               >
                 {/* Editor File Tab Header */}
-                <div className="h-9 px-3 border-b border-neutral-800 bg-neutral-900/60 flex items-center justify-between text-xs shrink-0">
+                <div className="h-9 px-3 border-b border-border bg-secondary/30 dark:bg-[#1a1a1a] flex items-center justify-between text-xs shrink-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-neutral-300 font-semibold flex items-center gap-1.5">
-                      <Code2 className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="font-mono text-foreground font-semibold flex items-center gap-1.5">
+                      <Code2 className="w-3.5 h-3.5 text-amber-500" />
                       {activeFile}
                     </span>
-                    <span className="text-[10px] text-neutral-500 font-mono">Arduino C++ (16MHz)</span>
+                    <span className="text-[10px] text-muted-foreground font-mono">Arduino C++ (16MHz)</span>
                   </div>
                   {interactionMode === 'STUDENT_CHALLENGE' && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-medium animate-pulse">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-medium animate-pulse">
                       Your Turn to Code
                     </span>
                   )}
@@ -646,41 +647,41 @@ export default function CircuitCanvasPage({
           </div>
 
           {/* Bottom Hardware Serial Monitor */}
-          <div className="h-44 border-t border-neutral-800 bg-neutral-950 flex flex-col shrink-0">
-            <div className="h-8 px-3 border-b border-neutral-800 bg-neutral-900/80 flex items-center justify-between text-xs shrink-0">
+          <div className="h-44 border-t border-border bg-secondary/15 dark:bg-[#141414] flex flex-col shrink-0">
+            <div className="h-8 px-3 border-b border-border bg-secondary/30 dark:bg-[#181818] flex items-center justify-between text-xs shrink-0">
               <div className="flex items-center gap-2">
-                <TerminalIcon className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="font-semibold text-neutral-200">Hardware Serial Monitor (UART)</span>
-                <span className="text-[10px] text-neutral-500 font-mono">115200 baud</span>
+                <TerminalIcon className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="font-semibold text-foreground">Hardware Serial Monitor (UART)</span>
+                <span className="text-[10px] text-muted-foreground font-mono">115200 baud</span>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSerialLines([])}
-                className="h-6 px-2 text-[10px] text-neutral-400 hover:text-white"
+                className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
               >
                 Clear
               </Button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-2.5 font-mono text-xs text-neutral-300 space-y-1 select-text">
+            <div className="flex-1 overflow-y-auto p-2.5 font-mono text-xs text-foreground space-y-1 select-text">
               {serialLines.map((line, idx) => (
-                <div key={idx} className={cn("leading-relaxed", line.startsWith('>') ? "text-sky-400" : line.includes('[SERIAL OUT]') ? "text-emerald-400 font-bold" : "text-neutral-400")}>
+                <div key={idx} className={cn("leading-relaxed", line.startsWith('>') ? "text-sky-500 dark:text-sky-400" : line.includes('[SERIAL OUT]') ? "text-emerald-500 dark:text-emerald-400 font-bold" : "text-muted-foreground")}>
                   {line}
                 </div>
               ))}
             </div>
 
             {/* Serial Send Input Form */}
-            <form onSubmit={handleSendSerial} className="h-8 px-2 border-t border-neutral-800 flex items-center gap-2 bg-neutral-900/50">
-              <input
+            <form onSubmit={handleSendSerial} className="h-9 px-2 border-t border-border flex items-center gap-2 bg-secondary/20">
+              <Input
                 type="text"
                 value={serialInput}
                 onChange={(e) => setSerialInput(e.target.value)}
                 placeholder="Send serial command to MCU (e.g. AT+PING)..."
-                className="flex-1 bg-transparent text-xs text-neutral-200 placeholder:text-neutral-500 focus:outline-none font-mono"
+                className="h-7 flex-1 bg-background text-xs font-mono"
               />
-              <Button type="submit" size="sm" variant="ghost" className="h-6 px-2 text-xs text-emerald-400 hover:text-emerald-300">
+              <Button type="submit" size="sm" variant="ghost" className="h-7 px-2 text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-500">
                 Send
               </Button>
             </form>
@@ -691,15 +692,15 @@ export default function CircuitCanvasPage({
         {showTutorPane && (
           <aside
             style={{ width: `${tutorWidth}px` }}
-            className="bg-neutral-900 flex flex-col shrink-0 min-w-[280px] max-w-[500px] border-l border-neutral-800 h-full z-20 shadow-2xl"
+            className="bg-card dark:bg-[#1b1b1b] flex flex-col shrink-0 min-w-[280px] max-w-[500px] border-l border-border h-full z-20 shadow-2xl"
           >
             {/* Tutor Header */}
-            <div className="h-11 px-3.5 border-b border-neutral-800 flex items-center justify-between shrink-0 bg-neutral-900/80">
+            <div className="h-11 px-3.5 border-b border-border flex items-center justify-between shrink-0 bg-secondary/30 dark:bg-[#181818]">
               <div className="flex items-center gap-2">
-                <div className={cn("w-2 h-2 rounded-full", isAiSpeaking ? "bg-amber-400 animate-ping" : "bg-emerald-400")} />
-                <span className="text-xs font-semibold text-white">AI Circuit & Hardware Tutor</span>
+                <div className={cn("w-2 h-2 rounded-full", isAiSpeaking ? "bg-amber-400 animate-ping" : "bg-emerald-500")} />
+                <span className="text-xs font-semibold text-foreground">AI Circuit & Hardware Tutor</span>
                 {isAiSpeaking && (
-                  <span className="flex items-center gap-1 text-[11px] text-amber-400 ml-1">
+                  <span className="flex items-center gap-1 text-[11px] text-amber-500 ml-1">
                     <Radio className="w-3 h-3 animate-pulse" />
                     Speaking
                   </span>
@@ -709,7 +710,7 @@ export default function CircuitCanvasPage({
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowTutorPane(false)}
-                className="h-6 w-6 p-0 text-neutral-400 hover:text-white"
+                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
               >
                 <X className="w-3.5 h-3.5" />
               </Button>
@@ -719,13 +720,13 @@ export default function CircuitCanvasPage({
             <div className="flex-1 overflow-y-auto p-3.5 space-y-3 select-text">
               {tutorMessages.length === 0 ? (
                 <div className="h-full flex flex-col justify-center items-center text-center p-3">
-                  <div className="w-10 h-10 rounded-2xl bg-neutral-800 border border-neutral-700 flex items-center justify-center text-white mb-3 shadow-xs">
-                    <HelpCircle className="w-5 h-5 text-neutral-400" />
+                  <div className="w-10 h-10 rounded-2xl bg-secondary border border-border flex items-center justify-center text-foreground mb-3 shadow-xs">
+                    <HelpCircle className="w-5 h-5 text-muted-foreground" />
                   </div>
-                  <h3 className="text-xs font-semibold text-white mb-1">
+                  <h3 className="text-xs font-semibold text-foreground mb-1">
                     Embedded AI Hardware Mentor
                   </h3>
-                  <p className="text-[11px] text-neutral-400 leading-relaxed max-w-[280px]">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed max-w-[280px]">
                     I observe your circuit wiring, firmware code, and serial telemetry. Ask me any question about GPIOs, PWM, or circuit debugging!
                   </p>
                 </div>
@@ -736,19 +737,19 @@ export default function CircuitCanvasPage({
                     className={cn(
                       "rounded-xl p-3 text-xs leading-relaxed border transition shadow-xs",
                       msg.sender === 'student'
-                        ? "bg-neutral-800 text-white border-neutral-700 ml-6"
+                        ? "bg-secondary text-foreground border-border ml-6"
                         : msg.type === 'success'
-                        ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
-                        : "bg-neutral-900 border-neutral-800 text-neutral-200"
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-300"
+                        : "bg-secondary/40 border-border text-foreground"
                     )}
                   >
-                    <div className="flex items-center justify-between mb-1.5 text-[11px] font-medium text-neutral-400">
+                    <div className="flex items-center justify-between mb-1.5 text-[11px] font-medium text-muted-foreground">
                       <span>{msg.sender === 'student' ? 'You' : 'AI Tutor'}</span>
                       {msg.sender === 'ai' && (
                         <button
                           onClick={() => speakNarration(msg.text, true)}
                           title="Listen again"
-                          className="hover:text-white text-neutral-400 transition"
+                          className="hover:text-foreground text-muted-foreground transition"
                         >
                           <Volume2 className="w-3.5 h-3.5" />
                         </button>
@@ -761,16 +762,16 @@ export default function CircuitCanvasPage({
             </div>
 
             {/* Quick Socratic Hint Button */}
-            <div className="px-3 pt-2 pb-1 bg-neutral-900 border-t border-neutral-800 flex items-center gap-1.5">
+            <div className="px-3 pt-2 pb-1 bg-card dark:bg-[#1b1b1b] border-t border-border flex items-center gap-1.5">
               <Button
                 variant="outline"
                 size="sm"
                 type="button"
                 onClick={() => handleVerifySolution('Can you inspect my circuit and firmware and give me a gentle hint on how to connect and program this?')}
                 disabled={isEvaluating}
-                className="flex-1 h-7 text-xs font-medium border-neutral-700 hover:bg-neutral-800 text-neutral-300 hover:text-white gap-1.5"
+                className="flex-1 h-7 text-xs font-medium border-border hover:bg-secondary text-foreground gap-1.5"
               >
-                <Sparkles className="w-3 h-3 text-amber-400" />
+                <Sparkles className="w-3 h-3 text-amber-500" />
                 <span>Ask for a Hardware Hint</span>
               </Button>
             </div>
@@ -784,7 +785,7 @@ export default function CircuitCanvasPage({
                 setStudentInput('');
                 handleVerifySolution(q);
               }}
-              className="p-3 bg-neutral-900 border-t border-neutral-800"
+              className="p-3 bg-card dark:bg-[#1b1b1b] border-t border-border"
             >
               <div className="flex items-center gap-1.5">
                 <Button
@@ -795,17 +796,17 @@ export default function CircuitCanvasPage({
                   title={isListeningMic ? 'Stop microphone' : 'Ask with voice'}
                   className={cn(
                     "h-8 w-8 shrink-0 transition",
-                    isListeningMic ? "bg-rose-500/25 border-rose-500 text-rose-400 animate-pulse" : "border-neutral-700 text-neutral-400 hover:text-white"
+                    isListeningMic ? "bg-destructive/15 border-destructive text-destructive animate-pulse" : "border-border text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {isListeningMic ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
                 </Button>
-                <input
+                <Input
                   type="text"
                   value={studentInput}
                   onChange={(e) => setStudentInput(e.target.value)}
                   placeholder={isListeningMic ? interimVoiceTranscript || 'Listening...' : 'Ask about pins, voltage, or C++ code...'}
-                  className="flex-1 bg-neutral-800/80 border border-neutral-700 rounded-md px-3 py-1.5 text-xs text-white placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  className="h-8 flex-1 text-xs bg-background"
                 />
                 <Button type="submit" size="icon" disabled={isEvaluating || !studentInput.trim()} className="h-8 w-8 shrink-0">
                   <Send className="w-3.5 h-3.5" />

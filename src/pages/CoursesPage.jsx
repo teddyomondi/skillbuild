@@ -7,32 +7,19 @@ export default function CoursesPage({
   setActiveTrackId,
   onLaunchLesson,
   onBackToSubjects,
-  onOpenSyllabusEngine,
-  onSyllabusGenerated,
-  onOpenStudio,
   isSignedIn
 }) {
-  const activeTrack = tracks.find((t) => t.id === activeTrackId);
-  const isCircuit = activeTrack?.workspaceType === 'circuit' || activeTrackId.includes('circuit');
-  const isMath = activeTrack?.workspaceType === 'math' || activeTrackId === 'mathematics';
-
-  const visibleTracks = tracks.filter((track) => {
-    if (track.id === activeTrackId) return true;
-    if (isCircuit) return track.workspaceType === 'circuit' || track.id.includes('circuit');
-    if (isMath) return track.workspaceType === 'math' || track.id === 'mathematics';
-    return track.id !== 'mathematics' && track.workspaceType !== 'circuit';
-  });
+  const visibleTracks = activeTrackId === 'mathematics'
+    ? tracks.filter((track) => track.id === 'mathematics')
+    : tracks.filter((track) => track.id !== 'mathematics');
 
   return (
     <FrappeLmsDashboard
-      tracks={visibleTracks.length > 0 ? visibleTracks : tracks}
+      tracks={visibleTracks}
       activeTrackId={activeTrackId}
       setActiveTrackId={setActiveTrackId}
       onLaunchLesson={onLaunchLesson}
       onBackToSubjects={onBackToSubjects}
-      onOpenSyllabusEngine={onOpenSyllabusEngine}
-      onSyllabusGenerated={onSyllabusGenerated}
-      onOpenStudio={onOpenStudio}
       forceMarketing={!isSignedIn}
     />
   );

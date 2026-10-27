@@ -25,7 +25,6 @@ const IdePage = lazy(() => import('./pages/IdePage.jsx'));
 const MathBoardPage = lazy(() => import('./pages/MathBoardPage.jsx'));
 const CircuitCanvasPage = lazy(() => import('./pages/CircuitCanvasPage.jsx'));
 const SyllabusEnginePage = lazy(() => import('./pages/SyllabusEnginePage.jsx'));
-const LabStudioPage = lazy(() => import('./pages/LabStudioPage.jsx'));
 
 function mergeCurriculumTracks(savedTracks = [], moduleWorkspaces = {}) {
   const validSavedTracks = (Array.isArray(savedTracks) ? savedTracks : [])
@@ -288,10 +287,6 @@ export default function App() {
         setCurrentView('syllabus-engine');
         return;
       }
-      if (route.view === 'studio') {
-        setCurrentView('studio');
-        return;
-      }
       if (route.view === 'lms') {
         if (route.trackId) {
           setActiveTrackId(route.trackId);
@@ -342,11 +337,6 @@ export default function App() {
   const handleOpenSyllabusEngine = useCallback(() => {
     navigateToRoute('/syllabus-engine', { title: 'Syllabus Engine' });
     setCurrentView('syllabus-engine');
-  }, []);
-
-  const handleOpenStudio = useCallback(() => {
-    navigateToRoute('/studio', { title: 'Lab Studio' });
-    setCurrentView('studio');
   }, []);
 
   const handleSyllabusCourseGenerated = useCallback((generatedTrack) => {
@@ -476,26 +466,6 @@ export default function App() {
     );
   }
 
-  // ROUTE 2.6: Lab Studio: 10-Minute STEM Challenge Builder (`/studio`, `/studio/:labId`)
-  if (currentView === 'studio') {
-    return (
-      <Suspense
-        fallback={
-          <div className="h-screen w-screen flex items-center justify-center bg-[#121214]">
-            <Spinner size="lg" />
-          </div>
-        }
-      >
-        <LabStudioPage
-          tracks={tracks}
-          setTracks={setTracks}
-          onBackToCourses={handleBackToCourses}
-          onLaunchLesson={handleLaunchLesson}
-        />
-      </Suspense>
-    );
-  }
-
   // ROUTE 3: Courses & LMS Dashboard (`/courses`, `/courses/:trackId`, `/welcome`, `/`)
   if (currentView === 'lms' || !isSignedIn) {
     return (
@@ -514,7 +484,6 @@ export default function App() {
           onBackToSubjects={handleBackToSubjects}
           onOpenSyllabusEngine={handleOpenSyllabusEngine}
           onSyllabusGenerated={handleSyllabusCourseGenerated}
-          onOpenStudio={handleOpenStudio}
           isSignedIn={isSignedIn}
         />
       </Suspense>
@@ -598,7 +567,6 @@ export default function App() {
         moduleWorkspaces={moduleWorkspaces}
         setModuleWorkspaces={setModuleWorkspaces}
         onBackToCourses={handleBackToCourses}
-        onOpenStudio={handleOpenStudio}
       />
     </Suspense>
   );

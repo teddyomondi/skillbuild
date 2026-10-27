@@ -13,11 +13,8 @@ import {
   MicOff,
   Radio,
   HelpCircle,
-  Volume2,
-  Cpu
+  Volume2
 } from 'lucide-react';
-import TrajectoryRouterModal from '@/components/TrajectoryRouterModal.jsx';
-import { recordTrajectoryOutcome } from '@/services/pedagogicalTrajectoryRouter.js';
 import { UserButton } from '@clerk/clerk-react';
 import { Button } from '@/components/ui/button.jsx';
 import Spinner from '@/components/ui/spinner.jsx';
@@ -33,7 +30,6 @@ import {
   startMicrophoneRecognition
 } from '@/services/socraticAiTutor.js';
 import { buildInterfaceContextSnapshot } from '@/services/interfaceTracker.js';
-import AiScreenCursor from '@/components/AiScreenCursor.jsx';
 
 const ExcalidrawWhiteboard = lazy(() => import('@/components/ExcalidrawWhiteboard.jsx'));
 
@@ -104,89 +100,7 @@ export default function MathBoardPage({
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [isListeningMic, setIsListeningMic] = useState(false);
   const [interimVoiceTranscript, setInterimVoiceTranscript] = useState('');
-  const [interactionMode, setInteractionMode] = useState('AI_STREAMING');
-  const [aiCursor, setAiCursor] = useState({
-    visible: true,
-    x: 420,
-    y: 220,
-    label: 'Maths Canvas Ready',
-    sublabel: '',
-    mode: 'glide',
-    variant: 'teach',
-    pulseKey: 1,
-  });
-  const lessonSessionIdRef = useRef(0);
   const micRecognitionRef = useRef(null);
-  const [showTrajectoryModal, setShowTrajectoryModal] = useState(false);
-  const activeStruggleEpisodeIdRef = useRef(null);
-
-  const injectCustomNextModule = (customModule) => {
-    if (!customModule) return;
-    setTracks((prevTracks) =>
-      prevTracks.map((track) => {
-        if (track.id !== activeTrack.id) return track;
-        if (track.nodes.some((n) => n.id === customModule.id || n.title === customModule.title)) {
-          return track;
-        }
-        const idx = track.nodes.findIndex((n) => n.id === activeNode.id);
-        const updatedNodes = [...track.nodes];
-        updatedNodes.splice(idx + 1, 0, customModule);
-        return { ...track, nodes: updatedNodes };
-      })
-    );
-  };
-
-  // Smooth Scrimba AI Instructor Cursor Walkthrough on Canvas
-  useEffect(() => {
-    const timeline = activeNode.aiTimeline || [];
-    if (!timeline.length) {
-      setInteractionMode('STUDENT_CHALLENGE');
-      return;
-    }
-
-    const sessionId = ++lessonSessionIdRef.current;
-    let stepIdx = 0;
-
-    const runStep = (idx) => {
-      if (sessionId !== lessonSessionIdRef.current) return;
-      const step = timeline[idx];
-      if (!step) return;
-
-      const isHandoff = step.isChallengeStop || idx === timeline.length - 1;
-      const targetLabel = isHandoff ? 'Your Turn on Whiteboard' : activeNode.title.replace(/^\d+\.\s*/, '');
-
-      // Glide cursor across canvas to draw vectors / equations
-      setAiCursor((prev) => ({
-        visible: true,
-        x: Math.min(window.innerWidth - 180, 280 + (idx * 140)),
-        y: 180 + (idx % 2 === 0 ? 40 : 120),
-        label: targetLabel,
-        sublabel: isHandoff ? 'Draw vector or solve equation' : 'Observing coordinate grid',
-        mode: 'glide',
-        variant: isHandoff ? 'handoff' : 'teach',
-        pulseKey: prev.pulseKey + 1,
-      }));
-
-      speakNarration(step.narration, true, () => {
-        if (sessionId !== lessonSessionIdRef.current) return;
-        if (isHandoff) {
-          setInteractionMode('STUDENT_CHALLENGE');
-        } else if (idx + 1 < timeline.length) {
-          setTimeout(() => runStep(idx + 1), 900);
-        }
-      });
-    };
-
-    const startTimer = setTimeout(() => {
-      runStep(0);
-    }, 300);
-
-    return () => {
-      clearTimeout(startTimer);
-      lessonSessionIdRef.current += 1;
-      stopNarration();
-    };
-  }, [activeNode.id]);
 
   useEffect(() => {
     const unsubscribeSpeak = onAiSpeakingStateChange((speaking) => {
@@ -285,20 +199,7 @@ export default function MathBoardPage({
       chatHistory: tutorMessages,
     });
 
-    if (result.trajectoryEpisodeId) {
-      activeStruggleEpisodeIdRef.current = result.trajectoryEpisodeId;
-    }
-
-    if (result.detourNode) {
-      injectCustomNextModule(result.detourNode);
-      toast.info('Trajectory Router: Detour B selected (Visual Component Sandbox injected to fix misconception)');
-    }
-
     if (result.passed && !customQuestion) {
-      if (activeStruggleEpisodeIdRef.current) {
-        recordTrajectoryOutcome(activeStruggleEpisodeIdRef.current, { passed: true });
-        activeStruggleEpisodeIdRef.current = null;
-      }
       handleCompleteLesson();
     }
 
@@ -366,7 +267,6 @@ export default function MathBoardPage({
 
   return (
     <div className="h-screen w-screen flex flex-col bg-background text-foreground overflow-hidden font-sans relative">
-      <AiScreenCursor cursorState={aiCursor} isAiSpeaking={isAiSpeaking} interactionMode={interactionMode} />
       {/* 1. PLATFORM TOP BAR (Collapsible with smooth animation) */}
       {showTopBar && (
         <header className="h-12 bg-background dark:bg-[#18181b] border-b border-border px-3.5 flex items-center justify-between gap-3 shrink-0 z-30 transition-all duration-200">
@@ -412,17 +312,6 @@ export default function MathBoardPage({
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>{isEvaluating ? 'Checking...' : 'Check Solution'}</span>
-            </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowTrajectoryModal(true)}
-              title="Pedagogical Trajectory Router (10,000+ Students Telemetry Benchmark)"
-              className="h-8 gap-1.5 px-3 text-xs font-semibold border-sky-500/40 text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 shadow-xs transition-all hidden sm:inline-flex"
-            >
-              <Cpu className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
-              <span>Trajectory Router</span>
             </Button>
 
             {nextModule && (
@@ -675,12 +564,6 @@ export default function MathBoardPage({
           </aside>
         )}
       </div>
-
-      <TrajectoryRouterModal
-        open={showTrajectoryModal}
-        onOpenChange={setShowTrajectoryModal}
-        activeNodeId={activeNode?.id}
-      />
     </div>
   );
 }
