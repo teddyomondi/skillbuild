@@ -4,26 +4,21 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  ChevronRight,
-  ChevronUp,
   ChevronDown,
+  ChevronUp,
   Sparkles,
   Cpu,
   Terminal as TerminalIcon,
   Code2,
   Send,
   X,
-  Play,
-  RotateCcw,
   Mic,
   MicOff,
   Radio,
   Volume2,
   HelpCircle,
-  ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
 import Spinner from '@/components/ui/spinner.jsx';
 import { UserButton } from '@clerk/clerk-react';
 import { cn } from '@/lib/utils.js';
@@ -34,7 +29,6 @@ import {
   stopNarration,
   onAiSpeakingStateChange,
   startMicrophoneRecognition,
-  generateDynamicLessonStepNarration
 } from '@/services/socraticAiTutor.js';
 import { buildInterfaceContextSnapshot } from '@/services/interfaceTracker.js';
 import AiScreenCursor from '@/components/AiScreenCursor.jsx';
@@ -79,7 +73,6 @@ export default function CircuitCanvasPage({
     return null;
   }, [activeTrack, currentModuleIndex]);
 
-  // Virtual Files & Active Code
   const [files, setFiles] = useState(() => {
     const saved = moduleWorkspaces[activeNode.id]?.files;
     return saved && Object.keys(saved).length > 0 ? saved : activeNode.initialFiles || {
@@ -90,21 +83,18 @@ export default function CircuitCanvasPage({
   const activeFile = 'sketch.ino';
   const firmwareCode = files[activeFile] || '';
 
-  // Workspace View Tabs: 'circuit' (Canvas / Wokwi) vs 'code' (Monaco C++) vs 'split' (Both)
   const [activeMainTab, setActiveMainTab] = useState('split');
   const [isSimulating, setIsSimulating] = useState(false);
   const [showTopBar, setShowTopBar] = useState(true);
-  const [showTutorPane, setShowTutorPane] = useState(true);
+  const [showTutor, setShowTutor] = useState(true);
   const [tutorWidth, setTutorWidth] = useState(360);
 
-  // Serial Monitor output logs
   const [serialLines, setSerialLines] = useState([
     '[UART] COM3 Serial Port connected at 115200 baud.',
     '[SYSTEM] Microcontroller ATmega328P clock ready.'
   ]);
   const [serialInput, setSerialInput] = useState('');
 
-  // AI Instructor Pointer Cursor State
   const [aiCursor, setAiCursor] = useState({
     visible: true,
     x: 420,
@@ -116,16 +106,13 @@ export default function CircuitCanvasPage({
     pulseKey: 1,
   });
 
-  // Voice & Interaction Mode
-  const [interactionMode, setInteractionMode] = useState('AI_STREAMING'); // 'AI_STREAMING' | 'STUDENT_CHALLENGE' | 'COMPLETED'
-  const [timelineStepIndex, setTimelineStepIndex] = useState(0);
+  const [interactionMode, setInteractionMode] = useState('AI_STREAMING');
   const [highlightedLine, setHighlightedLine] = useState(1);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [isListeningMic, setIsListeningMic] = useState(false);
   const [interimVoiceTranscript, setInterimVoiceTranscript] = useState('');
   const [isEvaluating, setIsEvaluating] = useState(false);
 
-  // Tutor messages
   const [tutorMessages, setTutorMessages] = useState(() => {
     const raw = moduleWorkspaces[activeNode.id]?.tutorMessages || [];
     return raw.filter((m) => m.type !== 'narration');
@@ -143,7 +130,6 @@ export default function CircuitCanvasPage({
   const lessonSessionIdRef = useRef(0);
   const micRecognitionRef = useRef(null);
 
-  // Smooth Cursor Targeting
   const moveAiCursorToUiElement = useCallback((uiId, { label = '', sublabel = '', variant = 'teach' } = {}) => {
     if (typeof document === 'undefined') return;
     const el = document.querySelector(`[data-ai-target="${uiId}"]`);
@@ -186,11 +172,10 @@ export default function CircuitCanvasPage({
         }));
       }
     } catch {
-      // ignore layout transition
+      // ignore
     }
   }, []);
 
-  // Sync speak narration state
   useEffect(() => {
     const unsubscribe = onAiSpeakingStateChange((speaking) => {
       setIsAiSpeaking(speaking);
@@ -202,7 +187,6 @@ export default function CircuitCanvasPage({
     };
   }, []);
 
-  // Monaco line highlight
   useEffect(() => {
     if (!editorRef.current || !monacoRef.current) return;
     const monaco = monacoRef.current;
@@ -221,7 +205,6 @@ export default function CircuitCanvasPage({
     ]);
   }, [highlightedLine, interactionMode]);
 
-  // Start Scrimba live walkthrough
   const startAiLiveWalkthrough = useCallback((stepIdx = 0, nodeOverride = null) => {
     const targetNode = nodeOverride || activeNode;
     const timeline = targetNode.aiTimeline || [];
@@ -237,7 +220,6 @@ export default function CircuitCanvasPage({
     clearInterval(typingTimerRef.current);
     stopNarration();
     setInteractionMode('AI_STREAMING');
-    setTimelineStepIndex(stepIdx);
 
     const targetLine = step.highlightLine || 1;
     setHighlightedLine(targetLine);
@@ -296,17 +278,16 @@ export default function CircuitCanvasPage({
     return () => clearTimeout(timer);
   }, [activeNode.id]);
 
-  // Run simulation & stream serial logs
   const handleToggleSimulation = () => {
     const nextState = !isSimulating;
     setIsSimulating(nextState);
     if (nextState) {
       setSerialLines((prev) => [
         ...prev,
-        `[SIM] Simulation Started. Microcontroller executing firmware at ${new Date().toLocaleTimeString()}...`,
-        '[SERIAL OUT] System Initialized: Arduino Uno GPIO Ready',
-        '[SERIAL OUT] LED State: ON',
-        '[SERIAL OUT] LED State: OFF'
+        `[SIM] Simulation Started at ${new Date().toLocaleTimeString()}...`,
+        '[SERIAL OUT] System Initialized: Microcontroller Ready',
+        '[SERIAL OUT] LED State: HIGH',
+        '[SERIAL OUT] LED State: LOW'
       ]);
     } else {
       setSerialLines((prev) => [...prev, `[SIM] Simulation Paused.`]);
@@ -328,10 +309,9 @@ export default function CircuitCanvasPage({
     setSerialInput('');
   };
 
-  // Solution Verification
   const handleVerifySolution = async (customQuestion = null) => {
     setIsEvaluating(true);
-    if (!showTutorPane) setShowTutorPane(true);
+    if (!showTutor) setShowTutor(true);
 
     const nextAttempt = attemptCount + 1;
     if (!customQuestion) setAttemptCount(nextAttempt);
@@ -354,7 +334,6 @@ export default function CircuitCanvasPage({
     }
 
     if (evalResult && evalResult.passed) {
-      // Completed lesson
       setTracks((prevTracks) =>
         prevTracks.map((track) => {
           if (track.id !== activeTrack.id) return track;
@@ -386,7 +365,6 @@ export default function CircuitCanvasPage({
       return;
     }
 
-    // Call Socratic AI for feedback
     const snapshot = buildInterfaceContextSnapshot({
       currentView: 'ide',
       activeTrack,
@@ -459,13 +437,13 @@ export default function CircuitCanvasPage({
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-background dark:bg-[#191919] text-foreground overflow-hidden font-sans relative transition-colors duration-200">
+    <div className="h-screen w-screen flex flex-col bg-background text-foreground overflow-hidden font-sans relative">
       <Toaster position="bottom-center" />
       <AiScreenCursor cursorState={aiCursor} isAiSpeaking={isAiSpeaking} interactionMode={interactionMode} />
 
-      {/* Top Header */}
+      {/* 1. PLATFORM TOP BAR */}
       {showTopBar && (
-        <header className="h-12 bg-background dark:bg-[#1F1F1F] border-b border-border px-3.5 flex items-center justify-between gap-3 shrink-0 z-30">
+        <header className="h-12 bg-background dark:bg-[#18181b] border-b border-border px-3.5 flex items-center justify-between gap-3 shrink-0 z-30 transition-all duration-200">
           <div className="flex items-center gap-2 min-w-0">
             <Button
               variant="ghost"
@@ -484,11 +462,11 @@ export default function CircuitCanvasPage({
               className="h-8 gap-1.5 px-2.5 text-xs font-medium border-border hover:bg-secondary text-foreground shrink-0"
             >
               <ArrowLeft className="w-3.5 h-3.5 text-muted-foreground" />
-              <span>Courses</span>
+              Courses
             </Button>
 
             <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-secondary/50 border border-border text-xs min-w-0">
-              <Cpu className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+              <Cpu className="w-3.5 h-3.5 text-primary shrink-0" />
               <span className="text-foreground font-semibold shrink-0">
                 Lab {currentModuleIndex + 1} of {activeTrack.nodes.length}
               </span>
@@ -501,24 +479,24 @@ export default function CircuitCanvasPage({
 
           <div className="flex items-center gap-2 shrink-0">
             {/* View Mode Switcher */}
-            <div className="hidden sm:flex bg-secondary p-0.5 rounded-lg border border-border text-xs">
+            <div className="hidden sm:flex bg-secondary p-0.5 rounded-lg text-xs border border-border/60">
               <button
                 onClick={() => setActiveMainTab('split')}
-                className={cn("px-2.5 py-1 rounded-md font-medium transition text-[11px]", activeMainTab === 'split' ? "bg-background dark:bg-[#18181b] text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground")}
+                className={cn("px-2.5 py-1 rounded-md font-medium transition text-[11px]", activeMainTab === 'split' ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground")}
               >
-                Split View
+                Split
               </button>
               <button
                 onClick={() => setActiveMainTab('circuit')}
-                className={cn("px-2.5 py-1 rounded-md font-medium transition text-[11px]", activeMainTab === 'circuit' ? "bg-background dark:bg-[#18181b] text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground")}
+                className={cn("px-2.5 py-1 rounded-md font-medium transition text-[11px]", activeMainTab === 'circuit' ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground")}
               >
-                Circuit Only
+                Circuit
               </button>
               <button
                 onClick={() => setActiveMainTab('code')}
-                className={cn("px-2.5 py-1 rounded-md font-medium transition text-[11px]", activeMainTab === 'code' ? "bg-background dark:bg-[#18181b] text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground")}
+                className={cn("px-2.5 py-1 rounded-md font-medium transition text-[11px]", activeMainTab === 'code' ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground")}
               >
-                Code Only
+                Firmware
               </button>
             </div>
 
@@ -555,14 +533,14 @@ export default function CircuitCanvasPage({
         </header>
       )}
 
-      {/* Floating Restore Bar Button */}
+      {/* 2. FLOATING MENU RESTORE BUTTON */}
       {!showTopBar && (
         <div className="absolute top-2.5 left-2.5 z-40">
           <Button
             variant="secondary"
             size="sm"
             onClick={() => setShowTopBar(true)}
-            className="h-8 px-2.5 gap-1.5 text-xs font-medium shadow-md border border-border bg-card/90 backdrop-blur-md text-foreground"
+            className="h-8 px-2.5 gap-1.5 text-xs font-medium shadow-md border border-border/80 bg-background/90 backdrop-blur-md hover:bg-secondary text-foreground"
           >
             <ChevronDown className="w-4 h-4 text-emerald-500" />
             <span>Menu</span>
@@ -570,13 +548,36 @@ export default function CircuitCanvasPage({
         </div>
       )}
 
-      {/* Main Workspace Layout */}
+      {/* 3. FLOATING AI TUTOR TOGGLE BUTTON */}
+      <div
+        className={cn(
+          "absolute z-40 transition-all duration-200",
+          showTopBar ? "top-14" : "top-2.5"
+        )}
+        style={{ right: showTutor ? `${tutorWidth + 12}px` : '12px' }}
+      >
+        <Button
+          variant={showTutor ? "secondary" : "default"}
+          size="sm"
+          onClick={() => setShowTutor((prev) => !prev)}
+          className={cn(
+            "h-8 px-3 gap-1.5 text-xs font-medium shadow-md border backdrop-blur-md transition",
+            showTutor
+              ? "bg-secondary text-foreground border-border hover:bg-secondary/80"
+              : "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/30"
+          )}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <span>{showTutor ? 'Hide Tutor' : 'AI Tutor'}</span>
+        </Button>
+      </div>
+
+      {/* 4. MAIN WORKSPACE */}
       <div className="flex-1 w-full h-full flex min-h-0 relative overflow-hidden">
-        {/* Left/Center Workspace (Circuit Canvas + Monaco Firmware Editor + Serial Monitor) */}
+        {/* Left/Center Workspace */}
         <div className="flex-1 h-full flex flex-col min-w-0 overflow-hidden">
-          {/* Main Content Area (Split between Circuit Canvas & Code Editor) */}
           <div className="flex-1 w-full flex min-h-0 overflow-hidden">
-            {/* 1. Circuit Canvas / Wokwi Simulator */}
+            {/* Circuit Canvas */}
             {(activeMainTab === 'circuit' || activeMainTab === 'split') && (
               <div className={cn("h-full min-h-0 border-r border-border", activeMainTab === 'split' ? "w-1/2" : "w-full")}>
                 <WokwiCircuitCanvas
@@ -591,29 +592,27 @@ export default function CircuitCanvasPage({
               </div>
             )}
 
-            {/* 2. Monaco Firmware Editor */}
+            {/* Monaco Firmware Editor */}
             {(activeMainTab === 'code' || activeMainTab === 'split') && (
               <div
                 ref={editorContainerRef}
-                className={cn("h-full flex flex-col min-h-0 bg-background dark:bg-[#18181b]", activeMainTab === 'split' ? "w-1/2" : "w-full")}
+                className={cn("h-full flex flex-col min-h-0 bg-card", activeMainTab === 'split' ? "w-1/2" : "w-full")}
               >
-                {/* Editor File Tab Header */}
-                <div className="h-9 px-3 border-b border-border bg-secondary/30 dark:bg-[#1a1a1a] flex items-center justify-between text-xs shrink-0">
+                <div className="h-9 px-3 border-b border-border bg-secondary/30 flex items-center justify-between text-xs shrink-0">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-foreground font-semibold flex items-center gap-1.5">
-                      <Code2 className="w-3.5 h-3.5 text-amber-500" />
+                      <Code2 className="w-3.5 h-3.5 text-primary" />
                       {activeFile}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">Arduino C++ (16MHz)</span>
+                    <span className="text-[10px] text-muted-foreground font-mono">Arduino C++</span>
                   </div>
                   {interactionMode === 'STUDENT_CHALLENGE' && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-medium animate-pulse">
-                      Your Turn to Code
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-medium">
+                      Your Turn
                     </span>
                   )}
                 </div>
 
-                {/* Monaco Editor */}
                 <div className="flex-1 w-full min-h-0 relative">
                   <Suspense fallback={<div className="h-full w-full flex items-center justify-center"><Spinner size="lg" /></div>}>
                     <Editor
@@ -634,8 +633,6 @@ export default function CircuitCanvasPage({
                         lineNumbers: 'on',
                         scrollBeyondLastLine: false,
                         automaticLayout: true,
-                        fontFamily: "'Fira Code', Menlo, Monaco, 'Courier New', monospace",
-                        fontLigatures: true,
                         tabSize: 2,
                         wordWrap: 'on'
                       }}
@@ -647,11 +644,11 @@ export default function CircuitCanvasPage({
           </div>
 
           {/* Bottom Hardware Serial Monitor */}
-          <div className="h-44 border-t border-border bg-secondary/15 dark:bg-[#141414] flex flex-col shrink-0">
-            <div className="h-8 px-3 border-b border-border bg-secondary/30 dark:bg-[#181818] flex items-center justify-between text-xs shrink-0">
+          <div className="h-40 border-t border-border bg-card flex flex-col shrink-0">
+            <div className="h-8 px-3 border-b border-border bg-secondary/30 flex items-center justify-between text-xs shrink-0">
               <div className="flex items-center gap-2">
                 <TerminalIcon className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="font-semibold text-foreground">Hardware Serial Monitor (UART)</span>
+                <span className="font-semibold text-foreground text-xs">Hardware Serial Monitor (UART)</span>
                 <span className="text-[10px] text-muted-foreground font-mono">115200 baud</span>
               </div>
               <Button
@@ -666,22 +663,21 @@ export default function CircuitCanvasPage({
 
             <div className="flex-1 overflow-y-auto p-2.5 font-mono text-xs text-foreground space-y-1 select-text">
               {serialLines.map((line, idx) => (
-                <div key={idx} className={cn("leading-relaxed", line.startsWith('>') ? "text-sky-500 dark:text-sky-400" : line.includes('[SERIAL OUT]') ? "text-emerald-500 dark:text-emerald-400 font-bold" : "text-muted-foreground")}>
+                <div key={idx} className={cn("leading-relaxed", line.startsWith('>') ? "text-primary font-bold" : line.includes('[SERIAL OUT]') ? "text-emerald-500 font-medium" : "text-muted-foreground")}>
                   {line}
                 </div>
               ))}
             </div>
 
-            {/* Serial Send Input Form */}
-            <form onSubmit={handleSendSerial} className="h-9 px-2 border-t border-border flex items-center gap-2 bg-secondary/20">
-              <Input
+            <form onSubmit={handleSendSerial} className="h-8 px-2 border-t border-border flex items-center gap-2 bg-secondary/20">
+              <input
                 type="text"
                 value={serialInput}
                 onChange={(e) => setSerialInput(e.target.value)}
-                placeholder="Send serial command to MCU (e.g. AT+PING)..."
-                className="h-7 flex-1 bg-background text-xs font-mono"
+                placeholder="Send serial command to MCU..."
+                className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground focus:outline-none font-mono"
               />
-              <Button type="submit" size="sm" variant="ghost" className="h-7 px-2 text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-500">
+              <Button type="submit" size="sm" variant="ghost" className="h-6 px-2 text-xs text-primary hover:text-primary/80">
                 Send
               </Button>
             </form>
@@ -689,18 +685,18 @@ export default function CircuitCanvasPage({
         </div>
 
         {/* Right Socratic AI Hardware Tutor Panel */}
-        {showTutorPane && (
+        {showTutor && (
           <aside
             style={{ width: `${tutorWidth}px` }}
-            className="bg-card dark:bg-[#1b1b1b] flex flex-col shrink-0 min-w-[280px] max-w-[500px] border-l border-border h-full z-20 shadow-2xl"
+            className="bg-card dark:bg-[#1b1b1b] flex flex-col shrink-0 min-w-[280px] max-w-[500px] border-l border-border h-full z-30 shadow-2xl transition-all duration-200"
           >
             {/* Tutor Header */}
-            <div className="h-11 px-3.5 border-b border-border flex items-center justify-between shrink-0 bg-secondary/30 dark:bg-[#181818]">
+            <div className="h-11 px-3.5 border-b border-border flex items-center justify-between shrink-0 bg-secondary/30">
               <div className="flex items-center gap-2">
-                <div className={cn("w-2 h-2 rounded-full", isAiSpeaking ? "bg-amber-400 animate-ping" : "bg-emerald-500")} />
-                <span className="text-xs font-semibold text-foreground">AI Circuit & Hardware Tutor</span>
+                <div className={cn("w-2 h-2 rounded-full", isAiSpeaking ? "bg-primary animate-ping" : "bg-emerald-500")} />
+                <span className="text-xs font-semibold text-foreground">AI Circuit Tutor</span>
                 {isAiSpeaking && (
-                  <span className="flex items-center gap-1 text-[11px] text-amber-500 ml-1">
+                  <span className="flex items-center gap-1 text-[11px] text-primary ml-1">
                     <Radio className="w-3 h-3 animate-pulse" />
                     Speaking
                   </span>
@@ -709,14 +705,14 @@ export default function CircuitCanvasPage({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setShowTutorPane(false)}
+                onClick={() => setShowTutor(false)}
                 className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
               >
                 <X className="w-3.5 h-3.5" />
               </Button>
             </div>
 
-            {/* Chat Conversation */}
+            {/* Conversation Stream */}
             <div className="flex-1 overflow-y-auto p-3.5 space-y-3 select-text">
               {tutorMessages.length === 0 ? (
                 <div className="h-full flex flex-col justify-center items-center text-center p-3">
@@ -739,12 +735,12 @@ export default function CircuitCanvasPage({
                       msg.sender === 'student'
                         ? "bg-secondary text-foreground border-border ml-6"
                         : msg.type === 'success'
-                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-300"
-                        : "bg-secondary/40 border-border text-foreground"
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                        : "bg-card dark:bg-[#181818] border-border text-foreground"
                     )}
                   >
                     <div className="flex items-center justify-between mb-1.5 text-[11px] font-medium text-muted-foreground">
-                      <span>{msg.sender === 'student' ? 'You' : 'AI Tutor'}</span>
+                      <span className="text-foreground font-semibold">{msg.sender === 'student' ? 'You' : 'AI Tutor'}</span>
                       {msg.sender === 'ai' && (
                         <button
                           onClick={() => speakNarration(msg.text, true)}
@@ -767,9 +763,9 @@ export default function CircuitCanvasPage({
                 variant="outline"
                 size="sm"
                 type="button"
-                onClick={() => handleVerifySolution('Can you inspect my circuit and firmware and give me a gentle hint on how to connect and program this?')}
+                onClick={() => handleVerifySolution('Can you inspect my circuit and firmware and give me a gentle hint?')}
                 disabled={isEvaluating}
-                className="flex-1 h-7 text-xs font-medium border-border hover:bg-secondary text-foreground gap-1.5"
+                className="flex-1 h-7 text-xs font-medium border-border hover:bg-secondary text-muted-foreground hover:text-foreground gap-1.5"
               >
                 <Sparkles className="w-3 h-3 text-amber-500" />
                 <span>Ask for a Hardware Hint</span>
@@ -796,17 +792,17 @@ export default function CircuitCanvasPage({
                   title={isListeningMic ? 'Stop microphone' : 'Ask with voice'}
                   className={cn(
                     "h-8 w-8 shrink-0 transition",
-                    isListeningMic ? "bg-destructive/15 border-destructive text-destructive animate-pulse" : "border-border text-muted-foreground hover:text-foreground"
+                    isListeningMic ? "bg-rose-500/25 border-rose-500 text-rose-400 animate-pulse" : "border-border text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {isListeningMic ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
                 </Button>
-                <Input
+                <input
                   type="text"
                   value={studentInput}
                   onChange={(e) => setStudentInput(e.target.value)}
                   placeholder={isListeningMic ? interimVoiceTranscript || 'Listening...' : 'Ask about pins, voltage, or C++ code...'}
-                  className="h-8 flex-1 text-xs bg-background"
+                  className="flex-1 bg-secondary/60 border border-border rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 />
                 <Button type="submit" size="icon" disabled={isEvaluating || !studentInput.trim()} className="h-8 w-8 shrink-0">
                   <Send className="w-3.5 h-3.5" />
