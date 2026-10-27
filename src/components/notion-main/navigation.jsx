@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
-import { ArrowLeft, ChevronLeftSquare, MenuIcon, Search, Settings } from "lucide-react";
+import { ArrowLeft, ChevronLeftSquare, MenuIcon, Search, Settings, Sparkles, Wand2 } from "lucide-react";
 import { navigateToRoute } from "@/services/routeManager.js";
 import { useSearch } from "@/hooks/use-search";
 import { useSettings } from "@/hooks/use-settings";
@@ -16,6 +16,8 @@ export const Navigation = ({
   onSelectDocument,
   onLaunchInIde,
   onBackToSubjects,
+  onOpenSyllabusEngine,
+  onOpenStudio,
 }) => {
   const isMobile = useMediaQuery("(max-width:768px)");
   const isResizingRef = useRef(false);
@@ -101,6 +103,8 @@ export const Navigation = ({
           <UserItem />
           <Item onClick={onOpenSearchBox} icon={Search} label="Search courses" isSearch />
           <Item onClick={onOpenSettings} icon={Settings} label="Settings" />
+          <Item onClick={onOpenStudio} icon={Wand2} label="⚡ Lab Studio" />
+          <Item onClick={onOpenSyllabusEngine} icon={Sparkles} label="Plug Syllabus PDF" />
         </div>
 
         <div className="mt-5">

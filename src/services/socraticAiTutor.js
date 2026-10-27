@@ -13,6 +13,12 @@ import removeMd from 'remove-markdown';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { formatInterfaceContextForPrompt } from './interfaceTracker.js';
+import {
+  resolveTrajectoryDomain,
+  startStruggleEpisode,
+  getTrajectoryPromptAugmentation,
+  buildWinningDetourNode
+} from './pedagogicalTrajectoryRouter.js';
 
 const DIRECT_QUESTION_SYSTEM_PROMPT = `You are Upskill AI, a patient coding tutor speaking with one learner in a chat.
 Use simple everyday English. Explain any technical word the first time you use it.
@@ -417,7 +423,10 @@ export function detectConceptStruggle({
   // 4. Struggling with `this` vs Closure Lexical Scope
   if (
     localEval?.detectedGap === 'this-vs-lexical-scope' ||
-    /\b(this\.|closure|lexical scope|outer scope)\b/i.test(q)
+    localEval?.detectedGap === 'state-mutation-in-closure' ||
+    activeNode?.id === 'js-closures-state' ||
+    activeNode?.conceptTag === 'closures' ||
+    /\b(this\.|closure|lexical scope|outer scope|encapsulat)\b/i.test(q)
   ) {
     return {
       gapTag: 'this-vs-lexical-scope',
@@ -425,14 +434,31 @@ export function detectConceptStruggle({
     };
   }
 
-  // 5. Struggling with Async / Promises
+  // 5. Struggling with Async / Promises & Event Loop
   if (
     localEval?.detectedGap === 'missing-await-promise' ||
-    /\b(async|await|promise|try.*catch)\b/i.test(q)
+    localEval?.detectedGap === 'promises-async' ||
+    activeNode?.id === 'js-async-event-loop' ||
+    activeNode?.conceptTag === 'promises-async' ||
+    /\b(async|await|promise|try.*catch|event loop|microtask|macrotask)\b/i.test(q)
   ) {
     return {
       gapTag: 'promises-async',
-      title: 'Async Functions, Promises & Await',
+      title: 'Async Functions, Promises & Microtask Event Loop',
+    };
+  }
+
+  // 5b. Struggling with Coordinate Geometry / Vectors
+  if (
+    activeNode?.id === 'math-vectors-coordinate-geometry' ||
+    activeNode?.conceptTag === 'vectors-geometry' ||
+    activeNode?.isMathBoard ||
+    localEval?.detectedGap === 'vectors-geometry' ||
+    /\b(vector|vectors|coordinate|coordinates|cartesian|tip-to-tail|magnitude|dx|dy)\b/i.test(q)
+  ) {
+    return {
+      gapTag: 'vectors-geometry',
+      title: 'Coordinate Geometry & Vector Component Decomposition',
     };
   }
 
@@ -489,6 +515,31 @@ export async function evaluateWithSocraticAI({
     localEval
   });
 
+  // Query Pedagogical Trajectory Router across 10,000+ struggles benchmark
+  let struggleEpisode = null;
+  let trajectoryAugmentation = '';
+  const trajectoryDomain = resolveTrajectoryDomain(
+    activeNode?.id,
+    detectedStruggle?.gapTag || activeNode?.conceptTag
+  );
+
+  if (!localEval.passed && trajectoryDomain) {
+    struggleEpisode = startStruggleEpisode({
+      learnerId: apiConfig?.learnerId || 'student-active',
+      nodeId: activeNode?.id,
+      nodeTitle: activeNode?.title,
+      conceptTag: detectedStruggle?.gapTag || activeNode?.conceptTag,
+      struggleSignature: `check-${attemptCount}: ${localEval.socraticHint || 'struggle-check'}`
+    });
+
+    if (struggleEpisode) {
+      trajectoryAugmentation = getTrajectoryPromptAugmentation(
+        struggleEpisode.domainId,
+        struggleEpisode.selectedArmKey
+      );
+    }
+  }
+
   const telemetryBlock = interfaceSnapshot
     ? formatInterfaceContextForPrompt(interfaceSnapshot)
     : `Learner Code:\n\`\`\`javascript\n${formatNumberedCode(learnerCode)}\n\`\`\`\nTerminal Output:\n\`\`\`\n${runtimeOutput}\n\`\`\``;
@@ -521,6 +572,7 @@ ${formatNumberedCode(learnerCode)}
 ${telemetryBlock}
 
 Detected Struggle Hint: ${detectedStruggle ? `${detectedStruggle.gapTag} (${detectedStruggle.title})` : 'none'}
+${trajectoryAugmentation}
 
 INSTRUCTION FOR RIGHT AI BAR:
 Respond to the learner's actual message. If they are answering the reflection question shown in the recent chat, say what they understood, explain any mix-up gently, and show how the code supports the idea. If they ask a question, answer it with a clear explanation of what the code does and why it is written this way. Use simple English and ask no more than one useful follow-up question. Do not mark the code challenge complete when they are only chatting.
@@ -543,6 +595,7 @@ Automated Heuristic Check:
 - passed: ${localEval.passed}
 - detectedGap: ${localEval.detectedGap || detectedStruggle?.gapTag || 'none'}
 - diagnostic note: ${localEval.socraticPraise || localEval.socraticHint}
+${trajectoryAugmentation}
 
 Evaluate the learner's code and terminal output specifically. If passed is true, congratulate them and explain why their code works. If passed is false, point out the exact line in their code that needs attention, and if they are struggling to write a function or another concept, set detectedGap and suggestDetourTitle so we build a custom module for them.`;
 
@@ -578,8 +631,9 @@ Evaluate the learner's code and terminal output specifically. If passed is true,
       const didPass = !isAskingQuestion && Boolean(localEval.passed);
 
       const customDetourNode =
-        !didPass && (gap || detourTitle)
-          ? createDynamicDetourNode(gap || 'js-functions-fundamentals', detourTitle, activeNode) ||
+        !didPass && (struggleEpisode?.detourNodeId || gap || detourTitle)
+          ? (struggleEpisode?.detourNodeId ? buildWinningDetourNode(struggleEpisode.detourNodeId, activeNode) : null) ||
+            createDynamicDetourNode(gap || 'js-functions-fundamentals', detourTitle, activeNode) ||
             localEval.detourNode
           : null;
 
@@ -589,6 +643,9 @@ Evaluate the learner's code and terminal output specifically. If passed is true,
         spokenText: parsed.spokenText || stripMarkdownForSpeech(cleanReply),
         detectedGap: gap,
         detourNode: customDetourNode,
+        trajectoryEpisodeId: struggleEpisode?.episodeId || null,
+        trajectoryArm: struggleEpisode?.selectedArmKey || null,
+        trajectoryDomain: trajectoryDomain?.id || null,
         cursorTarget: parsed.cursorTarget || {
           type: 'editor',
           line: focal.line,
@@ -610,7 +667,9 @@ Evaluate the learner's code and terminal output specifically. If passed is true,
     detectedStruggle?.title || localEval.detourNode?.title || 'JavaScript Functions: Inputs, Body & Return';
 
   const customDetourNode = !localEval.passed
-    ? createDynamicDetourNode(gap, detourTitle, activeNode) || localEval.detourNode
+    ? (struggleEpisode?.detourNodeId ? buildWinningDetourNode(struggleEpisode.detourNodeId, activeNode) : null) ||
+      createDynamicDetourNode(gap, detourTitle, activeNode) ||
+      localEval.detourNode
     : null;
 
   const fallbackReply =
@@ -625,6 +684,9 @@ Evaluate the learner's code and terminal output specifically. If passed is true,
     spokenText: stripMarkdownForSpeech(fallbackReply),
     detectedGap: gap,
     detourNode: customDetourNode,
+    trajectoryEpisodeId: struggleEpisode?.episodeId || null,
+    trajectoryArm: struggleEpisode?.selectedArmKey || null,
+    trajectoryDomain: trajectoryDomain?.id || null,
     cursorTarget: {
       type: 'editor',
       line: focal.line,
@@ -775,6 +837,37 @@ export function createDynamicDetourNode(gapTag, detourTitle, parentNode) {
   if (!gapTag && !detourTitle) return null;
   const normalizedGap = (gapTag || '').toLowerCase();
   const title = detourTitle || 'JavaScript Functions: Inputs, Body & Return';
+
+  // 0. Winning Trajectory Detours from 10,000+ Students Telemetry Benchmark
+  if (
+    normalizedGap.includes('closure') ||
+    normalizedGap.includes('lexical') ||
+    normalizedGap === 'this-vs-lexical-scope' ||
+    normalizedGap === 'state-mutation-in-closure'
+  ) {
+    const detour = buildWinningDetourNode('detour-closure-encapsulation-sandbox', parentNode);
+    if (detour) return detour;
+  }
+
+  if (
+    normalizedGap.includes('async') ||
+    normalizedGap.includes('promise') ||
+    normalizedGap.includes('event-loop') ||
+    normalizedGap === 'missing-await-promise'
+  ) {
+    const detour = buildWinningDetourNode('detour-async-event-loop-sandbox', parentNode);
+    if (detour) return detour;
+  }
+
+  if (
+    normalizedGap.includes('vector') ||
+    normalizedGap.includes('coordinate') ||
+    normalizedGap.includes('geometry') ||
+    normalizedGap === 'vectors-geometry'
+  ) {
+    const detour = buildWinningDetourNode('detour-vector-component-decomposition', parentNode);
+    if (detour) return detour;
+  }
 
   // 1. Specialized Custom Module for JavaScript Functions (Declaration, Parameters, Body & Return)
   if (
@@ -1549,3 +1642,5 @@ export function startMicrophoneRecognition({ onInterimResult, onFinalResult, onE
   recognition.start();
   return recognition;
 }
+
+export const startSpeechRecognition = startMicrophoneRecognition;

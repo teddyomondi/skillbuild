@@ -1,9 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Toaster } from "sonner";
 import { useAuth } from "@clerk/clerk-react";
+import { Sparkles, Wand2, GraduationCap, Brain } from "lucide-react";
 import Spinner from "@/components/ui/spinner";
+import { Button } from "@/components/ui/button";
 import { SearchCommand } from "@/components/search-command";
 import { SettingsModal } from "@/components/modals/settings-modal";
+import SyllabusImportModal from "@/components/modals/SyllabusImportModal";
+import AcademicLedgerDashboard from "@/components/AcademicLedgerDashboard";
+import PlatformIntelligenceDashboard from "@/components/PlatformIntelligenceDashboard";
 import { Navigation } from "@/components/notion-main/navigation";
 import Navbar from "@/components/notion-marketing/Navbar";
 import Heading from "@/components/notion-marketing/Heading";
@@ -25,7 +30,8 @@ function makeCurriculumDocuments(tracks) {
     frontend: "🌐",
     backend: "⚡",
     "fullstack-ai": "🧠",
-    mathematics: "📐"
+    mathematics: "📐",
+    "caltech-embedded-iot": "⚡",
   };
 
   const safeTracks = (Array.isArray(tracks) ? tracks : []).filter(
@@ -41,7 +47,7 @@ function makeCurriculumDocuments(tracks) {
     const trackDocument = {
       id: trackId,
       title: track.title.split("(")[0].trim(),
-      icon: trackIconMap[track.id] || "📐",
+      icon: trackIconMap[track.id] || (track.workspaceType === "circuit" ? "⚡" : track.workspaceType === "math" ? "📐" : "🌐"),
       parentDocument: null,
       isShared: true,
       isCurriculum: true,
@@ -53,7 +59,7 @@ function makeCurriculumDocuments(tracks) {
     const moduleDocuments = track.nodes.map((node, index) => ({
       id: `node-${track.id}-${node.id}`,
       title: node.title.replace(/^\d+\.\s*/, ""),
-      icon: node.isMathBoard || track.id === "mathematics" ? "📐" : undefined,
+      icon: node.workspaceType === "circuit" || track.workspaceType === "circuit" ? "⚡" : node.isMathBoard || track.id === "mathematics" || track.workspaceType === "math" ? "📐" : undefined,
       parentDocument: trackId,
       isShared: true,
       isCurriculum: true,
@@ -73,9 +79,16 @@ export default function FrappeLmsDashboard({
   setActiveTrackId,
   onLaunchLesson,
   onBackToSubjects,
+  onOpenSyllabusEngine,
+  onSyllabusGenerated,
+  onOpenStudio,
   forceMarketing = false,
 }) {
   const { isLoaded, isSignedIn } = useAuth();
+  const [isSyllabusModalOpen, setIsSyllabusModalOpen] = useState(false);
+  const [isAcademicLedgerOpen, setIsAcademicLedgerOpen] = useState(false);
+  const [isIntelligenceOpen, setIsIntelligenceOpen] = useState(false);
+  const handleOpenSyllabus = onOpenSyllabusEngine || (() => setIsSyllabusModalOpen(true));
   const marketingScrollRef = useRef(null);
   const initialRoute = useMemo(
     () => parseAppRoute(typeof window !== "undefined" ? window.location.pathname : "/courses"),
@@ -207,6 +220,8 @@ export default function FrappeLmsDashboard({
         onSelectDocument={handleSelectDocument}
         onLaunchInIde={handleLaunchNode}
         onBackToSubjects={onBackToSubjects}
+        onOpenSyllabusEngine={handleOpenSyllabus}
+        onOpenStudio={onOpenStudio}
       />
       <main className="flex-1 h-full overflow-y-auto">
         <SearchCommand
@@ -216,6 +231,30 @@ export default function FrappeLmsDashboard({
           onLaunchLesson={handleLaunchNode}
         />
         <SettingsModal />
+        <SyllabusImportModal
+          isOpen={isSyllabusModalOpen}
+          onClose={() => setIsSyllabusModalOpen(false)}
+          onCourseGenerated={(genTrack) => {
+            setIsSyllabusModalOpen(false);
+            onSyllabusGenerated?.(genTrack);
+          }}
+        />
+
+        {isAcademicLedgerOpen && (
+          <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+            <div className="w-full max-w-6xl max-h-[95vh] overflow-y-auto rounded-2xl">
+              <AcademicLedgerDashboard onClose={() => setIsAcademicLedgerOpen(false)} />
+            </div>
+          </div>
+        )}
+
+        {isIntelligenceOpen && (
+          <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+            <div className="w-full max-w-5xl max-h-[95vh] overflow-y-auto rounded-2xl">
+              <PlatformIntelligenceDashboard onClose={() => setIsIntelligenceOpen(false)} />
+            </div>
+          </div>
+        )}
 
         <div className="mx-auto max-w-5xl px-6 pb-20 pt-24 sm:px-10">
           {currentTrack ? (
@@ -223,17 +262,59 @@ export default function FrappeLmsDashboard({
               <header className="mb-8 flex items-end justify-between gap-4 border-b border-border/70 pb-5">
                 <div>
                   <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    {isMathsDashboard ? "Maths courses" : "Course progress"}
+                    {isMathsDashboard ? "Maths courses" : currentTrack.workspaceType === "circuit" ? "Circuit & Embedded Labs" : "Course progress"}
                   </h1>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {isMathsDashboard
                       ? "Learn with graphs, shapes, vectors, and the digital board."
+                      : currentTrack.workspaceType === "circuit"
+                      ? "Program microcontrollers with Wokwi simulation, virtual pins, and live serial telemetry."
                       : currentTrack.title.split("(")[0].trim()}
                   </p>
                 </div>
-                <div className="shrink-0 rounded-full bg-secondary px-4 py-2 text-sm font-medium tabular-nums">
-                  <span className="text-foreground">{completedCount}</span>
-                  <span className="text-muted-foreground"> / {totalNodes}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsAcademicLedgerOpen(true)}
+                    className="h-8 gap-1.5 px-3 text-xs font-semibold border-indigo-500/40 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 shadow-xs"
+                    title="Official Practical Lab Grading Ledger & System of Record"
+                  >
+                    <GraduationCap className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Grading Ledger</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsIntelligenceOpen(true)}
+                    className="h-8 gap-1.5 px-3 text-xs font-semibold border-purple-500/40 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 shadow-xs"
+                    title="Dual-Loop Intelligence: Personal Cognitive Profile & Platform Fleet Analytics"
+                  >
+                    <Brain className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+                    <span>Fleet Brain</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onOpenStudio}
+                    className="h-8 gap-1.5 px-3 text-xs font-semibold border-amber-500/40 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 shadow-xs"
+                    title="10-Minute STEM Challenge Builder"
+                  >
+                    <Wand2 className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Lab Studio</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleOpenSyllabus}
+                    className="h-8 gap-1.5 px-3 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Plug Syllabus</span>
+                  </Button>
+                  <div className="shrink-0 rounded-full bg-secondary px-4 py-2 text-sm font-medium tabular-nums">
+                    <span className="text-foreground">{completedCount}</span>
+                    <span className="text-muted-foreground"> / {totalNodes}</span>
+                  </div>
                 </div>
               </header>
               <CourseProgressPath nodes={currentTrack.nodes} onSelectModule={handleLaunchModule} />

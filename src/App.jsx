@@ -23,6 +23,9 @@ import { saveOnboardingData } from './services/adaptiveOnboardingEngine.js';
 const CoursesPage = lazy(() => import('./pages/CoursesPage.jsx'));
 const IdePage = lazy(() => import('./pages/IdePage.jsx'));
 const MathBoardPage = lazy(() => import('./pages/MathBoardPage.jsx'));
+const CircuitCanvasPage = lazy(() => import('./pages/CircuitCanvasPage.jsx'));
+const SyllabusEnginePage = lazy(() => import('./pages/SyllabusEnginePage.jsx'));
+const LabStudioPage = lazy(() => import('./pages/LabStudioPage.jsx'));
 
 function mergeCurriculumTracks(savedTracks = [], moduleWorkspaces = {}) {
   const validSavedTracks = (Array.isArray(savedTracks) ? savedTracks : [])
@@ -281,6 +284,14 @@ export default function App() {
         setCurrentView('subjects');
         return;
       }
+      if (route.view === 'syllabus-engine') {
+        setCurrentView('syllabus-engine');
+        return;
+      }
+      if (route.view === 'studio') {
+        setCurrentView('studio');
+        return;
+      }
       if (route.view === 'lms') {
         if (route.trackId) {
           setActiveTrackId(route.trackId);
@@ -309,6 +320,12 @@ export default function App() {
   }, []);
 
   const handleSelectSubject = useCallback(async (trackId) => {
+    if (trackId === 'syllabus-engine') {
+      navigateToRoute('/syllabus-engine', { title: 'Syllabus Engine' });
+      setCurrentView('syllabus-engine');
+      return;
+    }
+
     const selectedTrack = tracks.find((track) => track.id === trackId) || tracks[0];
     setActiveTrackId(trackId);
     setActiveNodeId(selectedTrack?.nodes?.[0]?.id || null);
@@ -321,6 +338,39 @@ export default function App() {
     setOnboardingStep('resume');
     setCurrentView('onboarding');
   }, [tracks]);
+
+  const handleOpenSyllabusEngine = useCallback(() => {
+    navigateToRoute('/syllabus-engine', { title: 'Syllabus Engine' });
+    setCurrentView('syllabus-engine');
+  }, []);
+
+  const handleOpenStudio = useCallback(() => {
+    navigateToRoute('/studio', { title: 'Lab Studio' });
+    setCurrentView('studio');
+  }, []);
+
+  const handleSyllabusCourseGenerated = useCallback((generatedTrack) => {
+    if (!generatedTrack) return;
+    setTracks((prev) => [
+      generatedTrack,
+      ...prev.filter((t) => t.id !== generatedTrack.id)
+    ]);
+    setActiveTrackId(generatedTrack.id);
+    const firstNode = generatedTrack.nodes?.[0];
+    setActiveNodeId(firstNode?.id || null);
+
+    if (firstNode) {
+      navigateToRoute(buildIdeRoute(generatedTrack.id, firstNode.id), {
+        title: firstNode.title ? firstNode.title.replace(/^\d+\.\s*/, '') : generatedTrack.title
+      });
+      setCurrentView('ide');
+    } else {
+      navigateToRoute(buildCourseTrackRoute(generatedTrack.id), {
+        title: generatedTrack.title
+      });
+      setCurrentView('lms');
+    }
+  }, []);
 
   const handleBackToCourses = useCallback(() => {
     const activeTrack = tracks.find((t) => t.id === activeTrackId) || tracks[0];
@@ -408,6 +458,44 @@ export default function App() {
     );
   }
 
+  // ROUTE 2.5: Autonomous Syllabus Ingestion Engine (`/syllabus-engine`)
+  if (currentView === 'syllabus-engine') {
+    return (
+      <Suspense
+        fallback={
+          <div className="h-screen w-screen flex items-center justify-center bg-background dark:bg-[#191919]">
+            <Spinner size="lg" />
+          </div>
+        }
+      >
+        <SyllabusEnginePage
+          onCourseGenerated={handleSyllabusCourseGenerated}
+          onBack={handleBackToSubjects}
+        />
+      </Suspense>
+    );
+  }
+
+  // ROUTE 2.6: Lab Studio: 10-Minute STEM Challenge Builder (`/studio`, `/studio/:labId`)
+  if (currentView === 'studio') {
+    return (
+      <Suspense
+        fallback={
+          <div className="h-screen w-screen flex items-center justify-center bg-[#121214]">
+            <Spinner size="lg" />
+          </div>
+        }
+      >
+        <LabStudioPage
+          tracks={tracks}
+          setTracks={setTracks}
+          onBackToCourses={handleBackToCourses}
+          onLaunchLesson={handleLaunchLesson}
+        />
+      </Suspense>
+    );
+  }
+
   // ROUTE 3: Courses & LMS Dashboard (`/courses`, `/courses/:trackId`, `/welcome`, `/`)
   if (currentView === 'lms' || !isSignedIn) {
     return (
@@ -424,6 +512,9 @@ export default function App() {
           setActiveTrackId={setActiveTrackId}
           onLaunchLesson={handleLaunchLesson}
           onBackToSubjects={handleBackToSubjects}
+          onOpenSyllabusEngine={handleOpenSyllabusEngine}
+          onSyllabusGenerated={handleSyllabusCourseGenerated}
+          onOpenStudio={handleOpenStudio}
           isSignedIn={isSignedIn}
         />
       </Suspense>
@@ -431,7 +522,41 @@ export default function App() {
   }
 
   // ROUTE 4: Interactive Learning Environment (`/learn/:trackId/:nodeId`)
-  if (activeTrackId === 'mathematics') {
+  const currentActiveTrack = tracks.find((t) => t.id === activeTrackId);
+  const isCircuitWorkspace =
+    currentActiveTrack?.workspaceType === 'circuit' ||
+    activeTrackId.includes('circuit') ||
+    activeTrackId.includes('embedded') ||
+    activeTrackId.includes('iot');
+  const isMathWorkspace =
+    currentActiveTrack?.workspaceType === 'math' ||
+    activeTrackId === 'mathematics';
+
+  if (isCircuitWorkspace) {
+    return (
+      <Suspense
+        fallback={
+          <div className="h-screen w-screen flex items-center justify-center bg-background dark:bg-[#191919]">
+            <Spinner size="lg" />
+          </div>
+        }
+      >
+        <CircuitCanvasPage
+          tracks={tracks}
+          setTracks={setTracks}
+          activeTrackId={activeTrackId}
+          setActiveTrackId={setActiveTrackId}
+          activeNodeId={activeNodeId}
+          setActiveNodeId={setActiveNodeId}
+          moduleWorkspaces={moduleWorkspaces}
+          setModuleWorkspaces={setModuleWorkspaces}
+          onBackToCourses={handleBackToCourses}
+        />
+      </Suspense>
+    );
+  }
+
+  if (isMathWorkspace) {
     return (
       <Suspense
         fallback={
@@ -473,6 +598,7 @@ export default function App() {
         moduleWorkspaces={moduleWorkspaces}
         setModuleWorkspaces={setModuleWorkspaces}
         onBackToCourses={handleBackToCourses}
+        onOpenStudio={handleOpenStudio}
       />
     </Suspense>
   );

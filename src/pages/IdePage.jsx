@@ -22,7 +22,15 @@ import {
   HelpCircle,
   Volume2,
   Compass,
+  ShieldCheck,
+  Cpu,
+  Wand2,
 } from 'lucide-react';
+import ProofCardModal from '@/components/modals/ProofCardModal.jsx';
+import TrajectoryRouterModal from '@/components/TrajectoryRouterModal.jsx';
+import { recordTrajectoryOutcome } from '@/services/pedagogicalTrajectoryRouter.js';
+import { getOrGenerateProofCard } from '@/services/skillReplayEngine.js';
+import { updateStudentCognitiveProfile } from '@/services/dualLoopAdaptiveEngine.js';
 import { ROADMAP_TRACKS } from '@/data/roadmapCurriculum.js';
 import {
   evaluateWithSocraticAI,
@@ -64,6 +72,7 @@ export default function IdePage({
   moduleWorkspaces,
   setModuleWorkspaces,
   onBackToCourses,
+  onOpenStudio,
 }) {
   // Active Track, Current Module & Next Module
   const activeTrack = useMemo(() => {
@@ -221,6 +230,23 @@ export default function IdePage({
   );
   const [isEvaluating, setIsEvaluating] = useState(false);
   const pendingLessonResumeRef = useRef(null);
+  const [showTrajectoryModal, setShowTrajectoryModal] = useState(false);
+  const activeStruggleEpisodeIdRef = useRef(null);
+
+  // Cryptographic Skill Replay ("Upskill Proof Card") Modal State
+  const [proofCardData, setProofCardData] = useState(null);
+  const [isProofCardOpen, setIsProofCardOpen] = useState(false);
+
+  const handleOpenProofCard = useCallback(async () => {
+    try {
+      const card = await getOrGenerateProofCard(activeNode?.id);
+      setProofCardData(card);
+      setIsProofCardOpen(true);
+    } catch (err) {
+      console.error('Failed to load proof card:', err);
+      toast.error('Could not generate proof card.');
+    }
+  }, [activeNode?.id]);
 
   const editorRef = useRef(null);
   const editorContainerRef = useRef(null);
@@ -977,6 +1003,15 @@ export default function IdePage({
       toast.error('The AI tutor could not be reached. Check the server AI settings.');
     }
 
+    try {
+      updateStudentCognitiveProfile(null, {
+        type: result.passed ? 'terminal_pass' : 'terminal_fail',
+        conceptTag: activeNode?.conceptTag || 'rate-limiting'
+      });
+    } catch {
+      // ignore
+    }
+
     if (result.cursorTarget) {
       if (result.cursorTarget.line) {
         setHighlightedLine(result.cursorTarget.line);
@@ -984,11 +1019,20 @@ export default function IdePage({
       applyAiCursorTarget(result.cursorTarget, result.passed ? 'success' : 'handoff');
     }
 
+    if (result.trajectoryEpisodeId) {
+      activeStruggleEpisodeIdRef.current = result.trajectoryEpisodeId;
+    }
+
     if (result.detourNode) {
       injectCustomNextModule(result.detourNode);
+      toast.info('Trajectory Router: Detour B selected (90s sandbox injected to resolve misconception)');
     }
 
     if (result.passed && !customQuestion) {
+      if (activeStruggleEpisodeIdRef.current) {
+        recordTrajectoryOutcome(activeStruggleEpisodeIdRef.current, { passed: true });
+        activeStruggleEpisodeIdRef.current = null;
+      }
       setInteractionMode('COMPLETED');
       setTracks((prevTracks) =>
         prevTracks.map((track) => {
@@ -1221,6 +1265,46 @@ ${
             <CheckCircle2 className="w-3.5 h-3.5" />
             {isEvaluating ? 'Checking...' : 'Check Solution'}
           </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              clearInterval(typingTimerRef.current);
+              stopNarration();
+              onOpenStudio?.();
+            }}
+            title="Lab Studio (10-Minute Challenge Builder for Engineers & Lecturers)"
+            className="hidden sm:inline-flex h-8 gap-1.5 px-3 text-xs font-semibold border-amber-500/40 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 shadow-xs transition-all"
+          >
+            <Wand2 className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden lg:inline">Lab Studio</span>
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowTrajectoryModal(true)}
+            title="Pedagogical Trajectory Router (10,000+ Students Telemetry Benchmark)"
+            className="hidden sm:inline-flex h-8 gap-1.5 px-3 text-xs font-semibold border-sky-500/40 text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 shadow-xs transition-all"
+          >
+            <Cpu className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
+            <span className="hidden lg:inline">Trajectory Router</span>
+            <span className="lg:hidden">Router</span>
+          </Button>
+
+          {(interactionMode === 'COMPLETED' || activeNode?.status === 'completed' || activeNode?.id === 'node-rate-limiter' || activeNode?.id === 'math-vectors-coordinate-geometry') && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleOpenProofCard}
+              title="View Cryptographic Skill Replay & Proof Card"
+              className="hidden sm:inline-flex h-8 gap-1.5 px-3 text-xs font-semibold border-emerald-500/40 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 shadow-xs transition-all"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+              <span>Proof Card</span>
+            </Button>
+          )}
 
           {nextModule && (
             <Button
@@ -1773,6 +1857,28 @@ ${
                 )}
               </div>
 
+              {interactionMode === 'COMPLETED' && (
+                <div className="mx-3 mb-2 p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex items-center justify-between gap-2 shadow-xs">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      Proof Card Generated
+                    </div>
+                    <div className="text-xs font-semibold text-foreground truncate mt-0.5">
+                      Merkle Replay &amp; Zero-Paste Audit
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleOpenProofCard}
+                    className="gap-1 text-xs h-7 px-2.5 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/20"
+                  >
+                    <span>View Proof</span>
+                  </Button>
+                </div>
+              )}
+
               {nextModule && interactionMode === 'COMPLETED' && (
                 <div className="mx-3 mb-2 p-3 rounded-xl bg-secondary/60 border border-border flex items-center justify-between gap-2">
                   <div className="min-w-0">
@@ -1900,6 +2006,18 @@ ${
           <span>{isEvaluating ? 'Checking...' : 'Check Solution'}</span>
         </Button>
 
+        {(interactionMode === 'COMPLETED' || activeNode?.status === 'completed') && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleOpenProofCard}
+            className="h-8 gap-1 px-2 text-xs font-semibold border-emerald-500/40 text-emerald-400 bg-emerald-500/10"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Proof</span>
+          </Button>
+        )}
+
         {nextModule && (
           <Button
             size="sm"
@@ -1917,6 +2035,20 @@ ${
           </Button>
         )}
       </div>
+
+      {/* Cryptographic Skill Replay ("Upskill Proof Card") Modal */}
+      <ProofCardModal
+        isOpen={isProofCardOpen}
+        onClose={() => setIsProofCardOpen(false)}
+        proofData={proofCardData}
+      />
+
+      {/* Pedagogical Trajectory Router (10,000+ Students Telemetry Benchmark) Modal */}
+      <TrajectoryRouterModal
+        open={showTrajectoryModal}
+        onOpenChange={setShowTrajectoryModal}
+        activeNodeId={activeNode?.id}
+      />
     </div>
   );
 }

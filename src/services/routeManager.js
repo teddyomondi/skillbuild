@@ -33,6 +33,14 @@ export function buildOnboardingRoute(step = 'resume') {
   return `/onboarding/${step}`;
 }
 
+export function buildSyllabusRoute() {
+  return '/syllabus-engine';
+}
+
+export function buildStudioRoute(labId = '') {
+  return labId ? `/studio/${encodeURIComponent(labId)}` : '/studio';
+}
+
 /**
  * Parses `window.location.pathname` into a structured route descriptor.
  */
@@ -76,6 +84,22 @@ export function parseAppRoute(pathname = '/') {
   if (parts[0] === 'subjects') {
     return {
       view: 'subjects',
+      path: cleanPath
+    };
+  }
+
+  if (parts[0] === 'syllabus-engine' || parts[0] === 'syllabus') {
+    return {
+      view: 'syllabus-engine',
+      path: cleanPath
+    };
+  }
+
+  // 0d. Lab Studio: /studio or /studio/:labId
+  if (parts[0] === 'studio') {
+    return {
+      view: 'studio',
+      labId: parts[1] || null,
       path: cleanPath
     };
   }

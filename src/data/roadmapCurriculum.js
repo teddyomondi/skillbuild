@@ -1757,6 +1757,225 @@ On the board, draw the sides from (0, 0) to (3, 0), from (3, 0) to (3, 4), and f
         }
       }
     ]
+  },
+  {
+    id: 'caltech-embedded-iot',
+    workspaceType: 'circuit',
+    title: 'Embedded Systems & Robotics (ESP32 / Arduino)',
+    subtitle: 'Hardware GPIO control, pulse-width modulation, ultrasonic distance sensing, and serial telemetry on real microcontrollers',
+    icon: 'Cpu',
+    nodes: [
+      {
+        id: 'circuit-mod-1-gpio-blink',
+        title: '1. GPIO Configuration & Digital Output Control',
+        category: 'Digital GPIO',
+        status: 'in-progress',
+        workspaceType: 'circuit',
+        conceptTag: 'arduino-digital-io',
+        description: 'Program an Arduino Uno to blink an external LED on Digital Pin 13, configuring pinMode and toggling voltage levels safely.',
+        targetFile: 'sketch.ino',
+        microcontroller: 'arduino-uno',
+        wokwiProjectId: 'arduino-uno-basic-led',
+        initialFiles: {
+          'sketch.ino': `// ============================================================================
+// CALTECH ROBOTICS LAB: Lab 1 — Digital GPIO & LED Blinking
+// Microcontroller: Arduino Uno (ATmega328P)
+// Pin 13 -> 220Ω Resistor -> LED Anode -> Cathode -> GND
+// ============================================================================
+
+const int LED_PIN = 13;
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("System Initialized: Arduino Uno GPIO Ready");
+  
+  // 👇 YOUR TURN: Configure LED_PIN as an OUTPUT using pinMode()
+  
+}
+
+void loop() {
+  // 👇 YOUR TURN: Turn the LED ON (HIGH), pause 500ms with delay(),
+  // turn the LED OFF (LOW), and pause 500ms with delay().
+  // Also print "LED State: ON" and "LED State: OFF" to the Serial Monitor!
+  
+}
+`,
+          'diagram.json': JSON.stringify({
+            version: 1,
+            author: 'Caltech Robotics Lab',
+            editor: 'wokwi',
+            parts: [
+              { type: 'wokwi-arduino-uno', id: 'uno', top: 10, left: 10, attrs: {} },
+              { type: 'wokwi-led', id: 'led1', top: -50, left: 240, attrs: { color: 'red' } },
+              { type: 'wokwi-resistor', id: 'r1', top: 20, left: 240, attrs: { value: '220' } }
+            ],
+            connections: [
+              [ 'uno:13', 'r1:1', 'green', [ 'v0' ] ],
+              [ 'r1:2', 'led1:A', 'green', [ 'v0' ] ],
+              [ 'uno:GND.1', 'led1:C', 'black', [ 'v0' ] ]
+            ]
+          }, null, 2)
+        },
+        circuitComponents: [
+          { id: 'uno', type: 'microcontroller', model: 'Arduino Uno' },
+          { id: 'led1', type: 'led', color: '#ef4444', label: 'Status LED', pinConnected: '13' },
+          { id: 'r1', type: 'resistor', resistance: '220Ω', label: 'Current Limiter' }
+        ],
+        aiTimeline: [
+          {
+            timeOffset: 0,
+            narration: "Welcome to Embedded Systems! On your circuit canvas, we have an Arduino Uno wired to a red LED on Pin 13 through a 220-ohm current-limiting resistor.",
+            file: 'sketch.ino',
+            highlightLine: 8,
+            cursorTarget: { type: 'ui', uiId: 'circuit-component-uno', label: 'Arduino Uno (Pin 13)' },
+            codeSnapshot: `const int LED_PIN = 13;\n\nvoid setup() {\n  Serial.begin(115200);\n  Serial.println("System Initialized: Arduino Uno GPIO Ready");\n}`
+          },
+          {
+            timeOffset: 4500,
+            narration: "Microcontroller pins start in high-impedance mode. Before driving current to the LED, we must call pinMode(LED_PIN, OUTPUT) inside setup().",
+            file: 'sketch.ino',
+            highlightLine: 13,
+            cursorTarget: { type: 'editor', line: 13, label: 'pinMode(LED_PIN, OUTPUT);' },
+            codeSnapshot: `const int LED_PIN = 13;\n\nvoid setup() {\n  Serial.begin(115200);\n  Serial.println("System Initialized: Arduino Uno GPIO Ready");\n  pinMode(LED_PIN, OUTPUT);\n}\n\nvoid loop() {\n}`
+          },
+          {
+            timeOffset: 8500,
+            narration: "Now take over! Inside loop(), toggle the LED using digitalWrite(LED_PIN, HIGH), delay(500), digitalWrite(LED_PIN, LOW), delay(500), and print the state to the Serial monitor.",
+            file: 'sketch.ino',
+            highlightLine: 18,
+            isChallengeStop: true,
+            cursorTarget: { type: 'editor', line: 18, label: 'Your turn: Write loop() blink cycle' },
+            codeSnapshot: `const int LED_PIN = 13;\n\nvoid setup() {\n  Serial.begin(115200);\n  Serial.println("System Initialized: Arduino Uno GPIO Ready");\n  pinMode(LED_PIN, OUTPUT);\n}\n\nvoid loop() {\n  // Turn LED ON, wait 500ms, turn OFF, wait 500ms\n  \n}`
+          }
+        ],
+        challengeSpec: {
+          prompt: "In `setup()`, call `pinMode(LED_PIN, OUTPUT);`. In `loop()`, call `digitalWrite(LED_PIN, HIGH); delay(500); digitalWrite(LED_PIN, LOW); delay(500);` and output `Serial.println(\"LED State: ON\");` to the serial monitor.",
+          targetFile: 'sketch.ino',
+          conceptsTested: ['gpio-pinmode', 'digitalwrite', 'delays', 'serial-telemetry'],
+          requiredPatterns: ['pinMode\\s*\\(\\s*LED_PIN\\s*,\\s*OUTPUT\\s*\\)', 'digitalWrite\\s*\\(\\s*LED_PIN', 'delay\\s*\\('],
+          expectedSerialPatterns: ['Ready', 'LED State'],
+          evaluateSubmission(firmwareCode = '', serialOutput = '') {
+            const hasPinMode = /pinMode\s*\(\s*(LED_PIN|13)\s*,\s*OUTPUT\s*\)/i.test(firmwareCode);
+            const hasWrite = /digitalWrite\s*\(\s*(LED_PIN|13)/i.test(firmwareCode);
+            const hasDelay = /delay\s*\(/i.test(firmwareCode);
+
+            if (!hasPinMode) {
+              return {
+                passed: false,
+                socraticHint: "Remember to configure pin 13 as an output using `pinMode(LED_PIN, OUTPUT);` inside `setup()`."
+              };
+            }
+            if (!hasWrite || !hasDelay) {
+              return {
+                passed: false,
+                socraticHint: "Inside `loop()`, use `digitalWrite(LED_PIN, HIGH); delay(500); digitalWrite(LED_PIN, LOW); delay(500);` to cycle the voltage."
+              };
+            }
+            return {
+              passed: true,
+              socraticPraise: "Outstanding! You've mastered hardware GPIO configuration and digital switching on real microcontroller silicon."
+            };
+          }
+        }
+      },
+      {
+        id: 'circuit-mod-2-pwm-sensors',
+        title: '2. Pulse-Width Modulation (PWM) & Servo Actuators',
+        category: 'Analog & PWM',
+        status: 'locked',
+        workspaceType: 'circuit',
+        conceptTag: 'arduino-pwm-servo',
+        description: 'Control robotic servo angles and analog LED brightness levels using Pulse-Width Modulation signals on pin ~9.',
+        targetFile: 'sketch.ino',
+        microcontroller: 'arduino-uno',
+        initialFiles: {
+          'sketch.ino': `// ============================================================================
+// CALTECH ROBOTICS LAB: Lab 2 — Pulse-Width Modulation & Actuator Signals
+// Microcontroller: Arduino Uno (Pin ~9 PWM Output)
+// ============================================================================
+
+const int PWM_PIN = 9;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PWM_PIN, OUTPUT);
+  Serial.println("PWM Actuator Controller Active on Pin 9");
+}
+
+// 👇 YOUR TURN: Write setActuatorPower(int dutyCycle)
+// Use analogWrite(PWM_PIN, dutyCycle) where dutyCycle is between 0 and 255.
+// Log the value to the Serial monitor!
+void setActuatorPower(int dutyCycle) {
+  
+}
+
+void loop() {
+  for (int val = 0; val <= 255; val += 50) {
+    setActuatorPower(val);
+    delay(200);
+  }
+}
+`,
+          'diagram.json': JSON.stringify({
+            version: 1,
+            author: 'Caltech Robotics Lab',
+            editor: 'wokwi',
+            parts: [
+              { type: 'wokwi-arduino-uno', id: 'uno', top: 10, left: 10, attrs: {} },
+              { type: 'wokwi-servo', id: 'servo1', top: -70, left: 220, attrs: {} }
+            ],
+            connections: [
+              [ 'uno:9', 'servo1:PWM', 'orange', [ 'v0' ] ],
+              [ 'uno:5V', 'servo1:V+', 'red', [ 'v0' ] ],
+              [ 'uno:GND.1', 'servo1:GND', 'black', [ 'v0' ] ]
+            ]
+          }, null, 2)
+        },
+        circuitComponents: [
+          { id: 'uno', type: 'microcontroller', model: 'Arduino Uno' },
+          { id: 'servo1', type: 'servo', label: 'Robotic Servo Arm', pinConnected: '9', angle: 90 }
+        ],
+        aiTimeline: [
+          {
+            timeOffset: 0,
+            narration: "Unlike digital pins that are strictly 0 or 1, PWM pins simulate analog voltage by rapidly pulsing between 0V and 5V.",
+            file: 'sketch.ino',
+            highlightLine: 6,
+            cursorTarget: { type: 'ui', uiId: 'circuit-component-servo1', label: 'PWM Servo Arm (Pin ~9)' },
+            codeSnapshot: `const int PWM_PIN = 9;`
+          },
+          {
+            timeOffset: 4500,
+            narration: "Take over in `setActuatorPower(dutyCycle)`! Use `analogWrite(PWM_PIN, dutyCycle)` and report the power level to the Serial monitor.",
+            file: 'sketch.ino',
+            highlightLine: 16,
+            isChallengeStop: true,
+            cursorTarget: { type: 'editor', line: 16, label: 'Implement analogWrite(PWM_PIN, dutyCycle)' },
+            codeSnapshot: `void setActuatorPower(int dutyCycle) {\n  // Use analogWrite(PWM_PIN, dutyCycle)\n}`
+          }
+        ],
+        challengeSpec: {
+          prompt: "In `setActuatorPower(int dutyCycle)`, clamp dutyCycle between 0 and 255, call `analogWrite(PWM_PIN, dutyCycle);`, and print `\"Power: \"` plus the value using `Serial.println()`.",
+          targetFile: 'sketch.ino',
+          conceptsTested: ['pwm', 'analogwrite', 'duty-cycle'],
+          requiredPatterns: ['analogWrite\\s*\\(\\s*PWM_PIN', 'Serial\\.print'],
+          expectedSerialPatterns: ['PWM Actuator', 'Power'],
+          evaluateSubmission(firmwareCode = '') {
+            const hasAnalogWrite = /analogWrite\s*\(\s*(PWM_PIN|9)/i.test(firmwareCode);
+            if (!hasAnalogWrite) {
+              return {
+                passed: false,
+                socraticHint: "Invoke `analogWrite(PWM_PIN, dutyCycle);` inside `setActuatorPower`."
+              };
+            }
+            return {
+              passed: true,
+              socraticPraise: "Excellent! PWM is the foundational signal protocol used to drive robotic motors, servos, and drone ESCs."
+            };
+          }
+        }
+      }
+    ]
   }
 ];
 

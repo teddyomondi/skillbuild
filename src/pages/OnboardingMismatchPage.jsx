@@ -13,6 +13,7 @@ const AVAILABLE_PATHS = [
   { id: 'fintech', label: 'FinTech Rails' },
   { id: 'ai', label: 'AI Systems' },
   { id: 'mathematics', label: 'Mathematics' },
+  { id: 'caltech-embedded-iot', label: 'Circuits & IoT' },
 ];
 
 export default function OnboardingMismatchPage({

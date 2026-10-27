@@ -245,6 +245,18 @@ export async function computeMarketMismatch({
         'Trigonometric Waveforms & Physics'
       ],
       marketDemandScore: 89
+    },
+    'caltech-embedded-iot': {
+      name: 'Embedded Systems & IoT Hardware',
+      marketRequiredSkills: [
+        'Microcontroller GPIO & Register Config',
+        'Pulse-Width Modulation (PWM) & Actuators',
+        'I2C / SPI Sensor Telemetry Protocols',
+        'UART Serial Debugging & Baud Rates',
+        'Circuit Schematics & Voltage Regulation',
+        'Edge Firmware Architecture (C++ / Arduino)'
+      ],
+      marketDemandScore: 95
     }
   };
 
@@ -320,6 +332,15 @@ export async function buildAdaptiveCourseTrack({
   targetDomain = 'frontend',
   learnerName = 'Student'
 }) {
+  if (targetDomain === 'caltech-embedded-iot' || targetDomain === 'circuit') {
+    const { synthesizeCircuitFallbackTrack } = await import('./syllabusEngine.js');
+    return synthesizeCircuitFallbackTrack({
+      title: 'Embedded Systems & Robotics Lab',
+      institution: learnerName,
+      moduleCount: 3
+    });
+  }
+
   const missing = (mismatchReport.missingSkills || []).join(', ');
   const topic = `Bridge Skills Gap: ${mismatchReport.primaryFocus || mismatchReport.domainName || 'Software Engineering'}`;
 
