@@ -49,7 +49,9 @@ export default function MathBoardPage({
       tracks.find((track) => track.id === activeTrackId) ||
       tracks.find((t) => t.id === 'mathematics') ||
       tracks[0];
-    const usableTrack = candidate?.nodes?.length ? candidate : ROADMAP_TRACKS[1] || ROADMAP_TRACKS[0];
+    const usableTrack = candidate?.nodes?.length
+      ? candidate
+      : tracks.find((t) => t.id === 'mathematics') || ROADMAP_TRACKS.find((t) => t.id === 'mathematics') || ROADMAP_TRACKS[0];
     const nodes = usableTrack.nodes.filter((node) => node && typeof node.id === 'string');
     return {
       ...usableTrack,

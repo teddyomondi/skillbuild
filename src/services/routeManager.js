@@ -7,14 +7,14 @@
 // - /welcome                         -> Platform Landing / Overview Page
 // ============================================================================
 
-export function buildIdeRoute(trackId = 'frontend', nodeId = 'html-semantic-structure') {
-  const safeTrack = encodeURIComponent(trackId || 'frontend');
-  const safeNode = encodeURIComponent(nodeId || 'html-semantic-structure');
+export function buildIdeRoute(trackId = 'reduzer-software-dev', nodeId = 'reduzer-binary-logic') {
+  const safeTrack = encodeURIComponent(trackId || 'reduzer-software-dev');
+  const safeNode = encodeURIComponent(nodeId || 'reduzer-binary-logic');
   return `/learn/${safeTrack}/${safeNode}`;
 }
 
-export function buildCourseTrackRoute(trackId = 'frontend') {
-  return `/courses/${encodeURIComponent(trackId || 'frontend')}`;
+export function buildCourseTrackRoute(trackId = 'reduzer-software-dev') {
+  return `/courses/${encodeURIComponent(trackId || 'reduzer-software-dev')}`;
 }
 
 export function buildWelcomeRoute() {
@@ -29,8 +29,8 @@ export function buildSignUpRoute() {
   return '/sign-up';
 }
 
-export function buildOnboardingRoute(step = 'resume') {
-  return `/onboarding/${step}`;
+export function buildOnboardingRoute() {
+  return '/subjects';
 }
 
 export function buildSyllabusRoute() {
@@ -71,13 +71,11 @@ export function parseAppRoute(pathname = '/') {
     };
   }
 
-  // 0b. Onboarding Route: /onboarding, /onboarding/resume, /onboarding/curriculum, /onboarding/mismatch
+  // 0b. Onboarding Route Redirect: users go directly to /subjects (resume & mismatch matching eliminated)
   if (parts[0] === 'onboarding') {
-    const step = parts[1] || 'resume';
     return {
-      view: 'onboarding',
-      onboardingStep: step,
-      path: cleanPath
+      view: 'subjects',
+      path: '/subjects'
     };
   }
 

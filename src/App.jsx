@@ -118,10 +118,10 @@ export default function App() {
   // Curriculum & workspace state
   const [tracks, setTracks] = useState(() => ROADMAP_TRACKS);
   const [activeTrackId, setActiveTrackId] = useState(
-    () => initialRoute.trackId || 'frontend'
+    () => initialRoute.trackId || 'reduzer-software-dev'
   );
   const [activeNodeId, setActiveNodeId] = useState(
-    () => initialRoute.nodeId || 'html-semantic-structure'
+    () => initialRoute.nodeId || 'reduzer-binary-logic'
   );
   const [moduleWorkspaces, setModuleWorkspaces] = useState({});
 
@@ -270,8 +270,8 @@ export default function App() {
         return;
       }
       if (route.view === 'onboarding') {
-        setOnboardingStep(route.onboardingStep || 'resume');
-        setCurrentView('onboarding');
+        navigateToRoute('/subjects', { replace: true, title: 'Choose a subject' });
+        setCurrentView('subjects');
         return;
       }
       if (route.view === 'subjects') {
@@ -314,7 +314,13 @@ export default function App() {
     setCurrentView('ide');
   }, []);
 
-  const handleSelectSubject = useCallback(async (trackId) => {
+  const handleSelectSubject = useCallback((trackId) => {
+    if (trackId === 'studio') {
+      navigateToRoute('/studio', { title: 'Lab Studio' });
+      setCurrentView('studio');
+      return;
+    }
+
     if (trackId === 'syllabus-engine') {
       navigateToRoute('/syllabus-engine', { title: 'Syllabus Engine' });
       setCurrentView('syllabus-engine');
@@ -322,16 +328,15 @@ export default function App() {
     }
 
     const selectedTrack = tracks.find((track) => track.id === trackId) || tracks[0];
-    setActiveTrackId(trackId);
+    const targetId = selectedTrack ? selectedTrack.id : trackId;
+    setActiveTrackId(targetId);
     setActiveNodeId(selectedTrack?.nodes?.[0]?.id || null);
 
-    // Save chosen subject as target domain for adaptive analysis
-    await saveOnboardingData({ targetDomain: trackId });
-
-    // Directly enter the step-by-step onboarding flow for the selected subject
-    navigateToRoute('/onboarding/resume', { title: 'Upload Resume' });
-    setOnboardingStep('resume');
-    setCurrentView('onboarding');
+    // Directly route to the designated course path — no resume or mismatch detour!
+    navigateToRoute(buildCourseTrackRoute(targetId), {
+      title: selectedTrack?.title ? selectedTrack.title.split('(')[0].trim() : 'Courses'
+    });
+    setCurrentView('lms');
   }, [tracks]);
 
   const handleOpenSyllabusEngine = useCallback(() => {
@@ -393,20 +398,13 @@ export default function App() {
     setCurrentView('lms');
   }, []);
 
-  // ROUTE 0: Step-by-Step Adaptive Onboarding (`/onboarding`, `/onboarding/resume`, `/onboarding/curriculum`, `/onboarding/mismatch`)
+  // ROUTE 0: Onboarding bypass — users go directly to designated paths
   if (currentView === 'onboarding') {
     return (
-      <OnboardingPage
-        initialStep={onboardingStep}
-        onCompleteOnboarding={handleCompleteOnboarding}
-        onSkipToCourse={() => {
-          const targetTrack = tracks.find((t) => t.id === activeTrackId) || tracks[0];
-          navigateToRoute(buildCourseTrackRoute(targetTrack.id), {
-            title: targetTrack.title.split('(')[0].trim()
-          });
-          setCurrentView('lms');
-        }}
-        onBackToSubjects={handleBackToSubjects}
+      <SubjectsPage
+        isClerkLoaded={isClerkLoaded}
+        clerkTimedOut={clerkTimedOut}
+        onSelectSubject={handleSelectSubject}
       />
     );
   }
@@ -499,7 +497,9 @@ export default function App() {
     activeTrackId.includes('iot');
   const isMathWorkspace =
     currentActiveTrack?.workspaceType === 'math' ||
-    activeTrackId === 'mathematics';
+    activeTrackId === 'mathematics' ||
+    activeTrackId === 'mit-vector-calculus' ||
+    activeTrackId.startsWith('math');
 
   if (isCircuitWorkspace) {
     return (

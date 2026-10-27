@@ -25,7 +25,11 @@ function makeCurriculumDocuments(tracks) {
     frontend: "🌐",
     backend: "⚡",
     "fullstack-ai": "🧠",
-    mathematics: "📐"
+    "software-engineer": "🏗️",
+    "reduzer-software-dev": "💻",
+    mathematics: "📐",
+    "mit-vector-calculus": "📐",
+    "caltech-embedded-iot": "🔌"
   };
 
   const safeTracks = (Array.isArray(tracks) ? tracks : []).filter(
@@ -53,7 +57,7 @@ function makeCurriculumDocuments(tracks) {
     const moduleDocuments = track.nodes.map((node, index) => ({
       id: `node-${track.id}-${node.id}`,
       title: node.title.replace(/^\d+\.\s*/, ""),
-      icon: node.isMathBoard || track.id === "mathematics" ? "📐" : undefined,
+      icon: node.isMathBoard || track.id === "mathematics" || track.workspaceType === "math" ? "📐" : undefined,
       parentDocument: trackId,
       isShared: true,
       isCurriculum: true,
@@ -196,7 +200,10 @@ export default function FrappeLmsDashboard({
   const currentTrack = activeDocument?.trackRef;
   const completedCount = currentTrack?.nodes.filter((node) => node.status === "completed").length || 0;
   const totalNodes = currentTrack?.nodes.length || 0;
-  const isMathsDashboard = currentTrack?.id === "mathematics";
+  const isMathsDashboard =
+    currentTrack?.id === "mathematics" ||
+    currentTrack?.workspaceType === "math" ||
+    currentTrack?.id === "mit-vector-calculus";
 
   return (
     <div className="h-screen w-screen flex bg-background dark:bg-[#1F1F1F] text-foreground overflow-hidden">
@@ -223,11 +230,11 @@ export default function FrappeLmsDashboard({
               <header className="mb-8 flex items-end justify-between gap-4 border-b border-border/70 pb-5">
                 <div>
                   <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    {isMathsDashboard ? "Maths courses" : "Course progress"}
+                    {isMathsDashboard ? (currentTrack.title ? currentTrack.title.split("(")[0].trim() : "Mathematics") : "Course progress"}
                   </h1>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {isMathsDashboard
-                      ? "Learn with graphs, shapes, vectors, and the digital board."
+                      ? "From arithmetic and coordinate geometry to single-variable calculus, linear algebra, and multivariable optimization."
                       : currentTrack.title.split("(")[0].trim()}
                   </p>
                 </div>

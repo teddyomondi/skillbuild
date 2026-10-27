@@ -236,15 +236,21 @@ export async function computeMarketMismatch({
       marketDemandScore: 97
     },
     mathematics: {
-      name: 'Applied & Computational Mathematics',
+      name: 'Mathematics: Scratch to Pro',
       marketRequiredSkills: [
-        'Vector Mathematics & Transformations',
-        'Coordinate Geometry & Projections',
-        'Calculus & Rate of Change',
-        'Linear Algebra in Graphics & AI',
-        'Trigonometric Waveforms & Physics'
+        'Arithmetic Foundations & Signed Displacements',
+        'Coordinate Geometry & Euclidean Distance',
+        'Euclidean Proofs & Pythagorean Geometry',
+        'Linear & Quadratic Function Analysis',
+        'Trigonometric Waves & The Unit Circle',
+        'Vector Spaces & Tip-to-Tail Operations',
+        'Dot Product, Orthogonality & Projections',
+        'Matrix Shear & Area Scaling Determinants',
+        'Differential Calculus & Instantaneous Tangents',
+        'Integral Calculus & Riemann Accumulation',
+        'Multivariable Gradients & Loss Optimization'
       ],
-      marketDemandScore: 89
+      marketDemandScore: 92
     },
     'caltech-embedded-iot': {
       name: 'Embedded Systems & IoT Hardware',
